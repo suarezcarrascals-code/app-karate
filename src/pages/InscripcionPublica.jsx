@@ -230,7 +230,7 @@ export default function InscripcionPublica() {
           </div>
 
           {/* RIGHT — sidebar sticky */}
-          <div className="w-56 shrink-0 sticky top-4 self-start">
+          <div className="w-80 shrink-0 sticky top-4 self-start">
             <div className="max-h-[calc(100vh-2rem)] overflow-y-auto space-y-4 pb-4">
               <GlosarioTerminos />
               <CategoriaDisplay categorias={categorias} />
