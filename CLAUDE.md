@@ -8,7 +8,7 @@ Aplicación web para gestión de competencias de karate. El organizador crea un 
 
 ## Stack técnico
 
-- **Frontend**: React (Vite) — mobile-first
+- **Frontend**: React (Vite) — mobile-first para vistas públicas y de competidores; desktop para marcador y gestión
 - **Base de datos**: Supabase (PostgreSQL + Realtime)
 - **Auth**: Supabase Auth
 - **Estilos**: Tailwind CSS
@@ -40,12 +40,71 @@ Esta jerarquía es la columna vertebral de toda la app. Cada pantalla, ruta y co
 1. Crear torneo          →  nombre, fecha, lugar, logo, estado
 2. Crear tatamis         →  nombre del tatami (ej: "Tatami A"), árbitro asignado
 3. Crear categorías      →  dentro del tatami: nombre, modalidad, género, rango de edad/peso
-4. Inscribir competidores →  se asignan a una categoría (y por ende a un tatami)
-5. Cerrar inscripciones  →  se genera el bracket / tabla de evaluación automáticamente
-6. Iniciar competencia   →  árbitros acceden a su tatami y operan el marcador
+4. Crear clubs           →  nombre del club / dojo participante
+5. Generar links de inscripción por club  →  ver sección "Modelo de inscripciones"
+6. Cerrar inscripciones  →  se genera el bracket / tabla de evaluación automáticamente
+7. Iniciar competencia   →  la mesa técnica opera el marcador desde un computador; el árbitro da las señales en el tatami
 ```
 
 El flujo es lineal y guiado. No se puede avanzar al paso siguiente sin completar el anterior (validación por estado).
+
+---
+
+## Modelo de inscripciones
+
+### Contexto
+
+La app se arrienda para torneos en Santander, Colombia. El organizador cobra la inscripción por fuera de la app (efectivo, Nequi, transferencia). La app no procesa pagos — solo controla el acceso al registro.
+
+### Flujo completo
+
+```
+Organizador acuerda con el entrenador: club, número de atletas, pago
+         ↓
+Organizador confirma el pago por fuera de la app
+         ↓
+Organizador genera un link único para ese club, con límite de atletas
+         ↓
+Organizador envía el link por WhatsApp al entrenador
+         ↓
+Entrenador abre el link (sin crear cuenta), ve las categorías disponibles
+         ↓
+Entrenador inscribe sus atletas uno por uno hasta el límite acordado
+         ↓
+Al llegar al límite, el formulario se bloquea automáticamente
+```
+
+### Reglas del link de inscripción
+
+- **Un link por club** — no un link general del torneo
+- El link incluye el nombre del club y el límite de atletas (ej: "Club Shotokan — máx. 12 atletas")
+- El link solo se puede generar cuando el torneo ya tiene creados: tatamis, categorías y clubs
+- El link expira cuando el organizador cierra las inscripciones del torneo
+- El entrenador no necesita crear cuenta ni contraseña — el link es el acceso
+- El link puede desactivarse manualmente si el entrenador lo comparte sin autorización
+
+### Pantalla del entrenador (vista pública por link)
+
+**Header:** nombre del torneo + nombre del club. Contador "X de N atletas registrados".
+
+**Sección de categorías:** lista de todas las categorías disponibles del torneo (nombre, modalidad, género, rango de edad/peso) para que el entrenador sepa qué hay antes de ingresar atletas.
+
+**Lista de atletas inscritos:** se va construyendo de arriba hacia abajo a medida que el entrenador agrega atletas. Cada fila muestra nombre completo y categoría asignada.
+
+**Formulario de inscripción (un atleta a la vez):**
+- Campos: nombre, apellido, fecha de nacimiento, peso, género
+- Al llenar los datos, el sistema resalta automáticamente la categoría sugerida
+- El entrenador confirma la sugerencia o elige otra categoría de la lista
+- Botón "Agregar atleta" → el atleta aparece en la lista, el formulario se limpia y queda listo para el siguiente
+- Al llegar al límite de atletas acordado, el botón desaparece y aparece mensaje de cierre
+
+### Pantalla del organizador — gestión de links
+
+- Lista de clubs del torneo
+- Por cada club: botón "Generar link", campo para ingresar el límite de atletas, estado (activo / cerrado / no generado)
+- Botón para copiar el link al portapapeles (para pegar en WhatsApp)
+- Botón para desactivar el link de un club
+- Contador de atletas inscritos por club en tiempo real
 
 ---
 
@@ -61,7 +120,7 @@ src/
       tatami/[id]/
         index            # Vista del tatami (categorías asignadas)
         categoria/[id]/  # Bracket o tabla kata según modalidad
-        marcador/[id]/   # UI táctil del árbitro
+        marcador/[id]/   # UI de marcador para la mesa técnica (desktop)
       inscripciones/     # Registro de competidores
       resultados/        # Podio general y exportación
       publico/           # Vista pública (sin login)
@@ -88,11 +147,59 @@ src/
 | Rol | Permisos |
 |---|---|
 | `organizador` | Acceso total al torneo que creó |
-| `arbitro` | Solo el marcador del tatami asignado |
-| `entrenador` | Inscribir competidores de su club, ver brackets |
+| `mesa_tecnica` | Opera el marcador del tatami asignado (acceso por link temporal) |
+| `entrenador` | Inscribir competidores de su club (acceso por link con límite) |
 | `publico` | Solo lectura — resultados y brackets |
 
 Roles manejados con Supabase RLS (Row Level Security).
+
+---
+
+## Autenticación y acceso
+
+### Modelo actual (v1)
+
+**Organizador:**
+- Registro libre con email + contraseña
+- Al registrarse, la cuenta queda en estado `pendiente`
+- El admin (sansuca.ia@gmail.com) recibe email de notificación y aprueba manualmente
+- El organizador recibe email de confirmación y puede entrar
+- Cada organizador solo ve y gestiona sus propios torneos — aislamiento total por RLS
+
+**Mesa técnica:**
+- Sin cuenta propia — acceso por link temporal generado por el organizador
+- Un link por tatami, generado el día del evento
+- El link solo funciona mientras el torneo está en estado `en_curso`
+- Al cerrar el torneo, todos los links de mesa técnica expiran automáticamente
+- No hay reutilización posible entre torneos: cada torneo requiere links nuevos
+
+**Entrenador:**
+- Sin cuenta — acceso por link único por club con límite de atletas
+- Ver sección "Modelo de inscripciones"
+
+**Público:**
+- Sin login — acceso directo a rutas públicas
+
+### Rutas protegidas vs públicas
+
+```
+Requieren login + cuenta aprobada:
+  /torneo/*          → solo el organizador que creó ese torneo
+  /torneos/nuevo     → cualquier organizador aprobado
+
+Sin login (públicas):
+  /inscripcion/:token           → entrenador por link
+  /torneo/:id/marcador/:id/tv   → display TV del marcador
+  /torneo/:id/publico           → vista pública de resultados
+```
+
+### ⏳ Pendiente — Login por pago (v2)
+
+El modelo de aprobación manual será reemplazado por un flujo de pago automático:
+- El organizador paga (MercadoPago u otro) para activar su cuenta
+- La aprobación se hace automáticamente al confirmar el pago
+- Sin intervención manual del admin para cada registro
+- Definir: ¿pago por torneo o suscripción mensual?
 
 ---
 
@@ -396,13 +503,72 @@ Los estados solo avanzan, nunca retroceden.
 
 ## Consideraciones de UX prioritarias
 
-### Marcador del árbitro (pantalla más crítica)
-- Botones gigantes (mínimo 60px de alto) — se opera con dedos, parado, bajo presión
-- Sin scroll en la pantalla principal del marcador
-- Confirmación modal antes de acciones irreversibles (ippon, hansoku, finalizar combate)
-- Kumite: indicador visual prominente rojo vs azul
-- Kata: entrada numérica por juez con teclado numérico grande
-- Cronómetro visible en todo momento para kumite
+### Marcador (mesa técnica) — pantalla más crítica
+
+**Dispositivo**: laptop/PC con mouse. La mesa técnica opera sentada en la orilla del tatami.
+**Dos ventanas**: la mesa abre el panel de control; un botón lanza `/tv` en ventana nueva para el proyector.
+
+#### Panel de control — Kumite
+
+- Botones grandes y bien separados — clickeo rápido sin error bajo presión
+- Sin scroll — todo visible de un vistazo en la pantalla
+- Atajos de teclado para las acciones más frecuentes
+
+**Por cada atleta (AKA y AO):**
+- YUKO +1 / WAZA-ARI +2 / IPPON +3
+- Deshacer último punto (antes de confirmar)
+- Penalizaciones: CHUI, HANSOKU CHUI, HANSOKU, SHIKKAKU (con confirmación modal), JOGAI (equivale a CHUI), MUBOBI (equivale a CHUI)
+- El sistema lleva la cuenta y bloquea CHUI cuando ya hay 3 (siguiente disponible: HANSOKU CHUI); bloquea HANSOKU CHUI si ya hubo uno (siguiente: HANSOKU)
+
+**SENSHU:**
+- Botón SENSHU → AKA / SENSHU → AO — primer punto no respondido
+- Botón TORIMASEN — anular SENSHU
+
+**Cronómetro:**
+- Iniciar / Pausar (HAJIME / YAME)
+- Reiniciar
+- Señal visual + sonora automática a los 15 segundos restantes (ATO SHIBARAKU)
+- Señal de tiempo final
+
+**Control del bout:**
+- SHOBU HAJIME — iniciar combate
+- YAME — pausar
+- MOTO NO ICHI — volver a posiciones iniciales
+- HANTEI — solicitar voto de jueces (empate total)
+- HIKIWAKE — declarar empate (solo Round-robin / equipos)
+- Finalizar bout → muestra ganador automático por puntos, o abre HANTEI si hay empate
+
+**Automático (sin botón):**
+- Diferencia ≥ 8 puntos → bout termina automáticamente
+- 3 CHUI acumulados → bloquea CHUI, habilita HANSOKU CHUI
+- HANSOKU CHUI previo → bloquea HANSOKU CHUI, habilita HANSOKU
+
+#### Panel de control — Kata
+
+- Entrada de puntaje por juez (J1–J5 o J1–J7 en Round-robin): 5.0 a 10.0 en pasos de 0.1
+- Confirmación individual por juez antes de enviar
+- Botón 0.0 separado con confirmación modal → descalificación (DQ)
+- El sistema calcula automáticamente: votos por juez, cuenta AKA vs AO, declara ganador por mayoría
+- Campo para registrar kata anunciado + validación automática (no repetir seguido, máx. 2 veces en el torneo)
+- Control del bout: Iniciar, AKA listo / AO listo, cronómetro (35 s para iniciar), cronómetro de 5 min para kata equipo en medallas
+- KIKEN — atleta no se presentó → rival avanza automáticamente
+
+#### TV Display (proyector)
+
+- URL separada: `/torneo/:id/marcador/:combateId/tv` — sin login, sin botones
+- Sincronización vía Supabase Realtime
+- Nombres grandes, scores enormes en rojo (AKA) y azul (AO)
+- Penalizaciones pequeñas al costado
+- Cronómetro grande
+- Nombre de categoría, tatami y ronda
+
+#### Compartido (ambos paneles)
+
+- Indicador de conexión online/offline — siempre visible
+- Nombre de categoría, tatami y ronda activa
+- Nombres y club de AKA y AO
+- Botón Protesta — formulario con cronómetro de 5 minutos según reglamento
+- Historial de acciones de la ronda
 
 ### Modo offline
 - El marcador funciona sin conexión (localStorage / IndexedDB)
@@ -851,6 +1017,14 @@ npm run preview    # Preview del build
 
 ---
 
+## Git y GitHub
+
+Repositorio: `https://github.com/suarezcarrascals-code/app-karate`
+
+**Regla obligatoria:** después de cualquier cambio en el código, hacer commit y push al repositorio antes de reportar el trabajo como completo. Sin excepciones.
+
+---
+
 ## Notas
 
 - La jerarquía Torneo → Tatami → Categoría es rígida — no romperla por atajos
@@ -861,4 +1035,5 @@ npm run preview    # Preview del build
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
+at [specs/007-links-mesa-tecnica/plan.md](specs/007-links-mesa-tecnica/plan.md)
 <!-- SPECKIT END -->
