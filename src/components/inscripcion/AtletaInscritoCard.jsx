@@ -9,7 +9,7 @@ export default function AtletaInscritoCard({ atleta, numero }) {
           {atleta.nombre} {atleta.apellido}
         </p>
         <p className="text-xs text-zinc-500 truncate">
-          {atleta.categoria?.nombre || 'Sin categoría'}
+          {atleta.inscripciones?.map((i) => i.categoria?.nombre).filter(Boolean).join(' · ') || 'Sin categoría'}
         </p>
       </div>
     </div>

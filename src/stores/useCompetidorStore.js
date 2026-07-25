@@ -1,9 +1,11 @@
 import { create } from 'zustand'
 import {
-  fetchCompetidores, insertCompetidor, deleteCompetidor,
+  fetchCompetidores, fetchCompetidorById,
+  insertCompetidor, deleteCompetidor,
   fetchEquipos, insertEquipo, deleteEquipo,
   asignarLado, limpiarLadosCategoria,
 } from '../lib/competidores'
+import { insertInscripcion } from '../lib/inscripciones'
 
 function shuffle(arr) {
   return [...arr].sort(() => Math.random() - 0.5)
@@ -25,24 +27,53 @@ const useCompetidorStore = create((set, get) => ({
     }
   },
 
+  // Crea un único competidor con inscripción en una categoría
+  addCompetidor: async (datos) => {
+    set({ loading: true, error: null })
+    try {
+      const competidor = await insertCompetidor(datos)
+      set((state) => ({ competidores: [...state.competidores, competidor], loading: false }))
+      return competidor
+    } catch (err) {
+      set({ error: err.message, loading: false })
+      throw err
+    }
+  },
+
+  // Crea un único competidor inscrito en múltiples categorías a la vez
   addCompetidores: async (datosBase, categorias, inscripcionManual = false) => {
     set({ loading: true, error: null })
     try {
-      const nuevos = []
+      const { categoria_id, ...personales } = datosBase
+      const comp = await insertCompetidor({
+        ...personales,
+        inscripcion_manual: inscripcionManual,
+      })
+
       for (const cat of categorias) {
-        const competidor = await insertCompetidor({
-          ...datosBase,
-          torneo_id: datosBase.torneo_id,
-          categoria_id: cat.id,
-          modalidad: cat.modalidad,
-          inscripcion_manual: inscripcionManual,
-        })
-        nuevos.push({ ...competidor, categoria: cat })
+        await insertInscripcion(comp.id, cat.id, datosBase.torneo_id)
       }
-      set((state) => ({ competidores: [...state.competidores, ...nuevos], loading: false }))
-      return nuevos
+
+      const actualizado = await fetchCompetidorById(comp.id)
+      set((state) => ({ competidores: [...state.competidores, actualizado], loading: false }))
+      return [actualizado]
     } catch (err) {
       set({ error: err.message, loading: false })
+      throw err
+    }
+  },
+
+  // Inscribe un competidor ya existente en una nueva categoría
+  inscribirEnCategoria: async (competidorId, categoriaId, torneoId) => {
+    set({ error: null })
+    try {
+      await insertInscripcion(competidorId, categoriaId, torneoId)
+      const actualizado = await fetchCompetidorById(competidorId)
+      set((state) => ({
+        competidores: state.competidores.map((c) => c.id === competidorId ? actualizado : c),
+      }))
+    } catch (err) {
+      set({ error: err.message })
       throw err
     }
   },
@@ -80,7 +111,6 @@ const useCompetidorStore = create((set, get) => ({
     }
   },
 
-  // Crea equipos de 3 aleatoriamente con los competidores disponibles (sin equipo aún)
   addEquiposAleatorios: async (competidoresCat, equiposCat, categoriaId) => {
     const asignados = new Set(
       equiposCat.flatMap((e) => [e.miembro_1_id, e.miembro_2_id, e.miembro_3_id])
@@ -127,7 +157,6 @@ const useCompetidorStore = create((set, get) => ({
     }
   },
 
-  // Asigna aka/ao aleatoriamente a todos los competidores de la categoría
   asignarLadosAleatorio: async (competidoresCat) => {
     const mezclados = shuffle(competidoresCat)
     const mitad = Math.ceil(mezclados.length / 2)

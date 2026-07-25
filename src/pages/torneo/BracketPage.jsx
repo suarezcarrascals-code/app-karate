@@ -31,7 +31,7 @@ export default function BracketPage() {
         const cat = cats.find((c) => c.id === catId)
         if (!cat) { navigate(`/torneo/${torneoId}/categorias`); return }
         setCategoria(cat)
-        setCompetidores(comps.filter((c) => c.categoria_id === catId))
+        setCompetidores(comps.filter((c) => c.inscripciones?.some((i) => i.categoria_id === catId)))
       } catch {
         navigate('/')
       } finally {

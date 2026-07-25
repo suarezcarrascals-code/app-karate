@@ -28,10 +28,22 @@ export function encontrarCategoriasCompatibles(competidor, categorias) {
   })
 }
 
+const COMPETIDOR_SELECT = '*, inscripciones:inscripcion(id, categoria_id, categoria(id, nombre, modalidad)), dojo:dojo_id(id, nombre)'
+
+export async function fetchCompetidorById(id) {
+  const { data, error } = await supabase
+    .from('competidor')
+    .select(COMPETIDOR_SELECT)
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function fetchCompetidores(torneoId) {
   const { data, error } = await supabase
     .from('competidor')
-    .select('*, categoria:categoria_id(id, nombre, modalidad), dojo:dojo_id(id, nombre)')
+    .select(COMPETIDOR_SELECT)
     .eq('torneo_id', torneoId)
     .order('created_at', { ascending: true })
   if (error) throw error
@@ -39,35 +51,22 @@ export async function fetchCompetidores(torneoId) {
 }
 
 export async function insertCompetidor(datos) {
-  const { data, error } = await supabase
+  const { categoria_id, ...competidorDatos } = datos
+  const { data: comp, error: compError } = await supabase
     .from('competidor')
-    .insert({ ...datos, estado: 'inscrito' })
-    .select('*, categoria:categoria_id(id, nombre, modalidad), dojo:dojo_id(id, nombre)')
+    .insert({ ...competidorDatos, estado: 'inscrito' })
+    .select('id')
     .single()
-  if (error) throw error
-  return data
-}
+  if (compError) throw compError
 
-export async function asignarCategoria(competidorId, categoriaId) {
-  const { data, error } = await supabase
-    .from('competidor')
-    .update({ categoria_id: categoriaId, estado: 'inscrito' })
-    .eq('id', competidorId)
-    .select()
-    .single()
-  if (error) throw error
-  return data
-}
+  if (categoria_id && datos.torneo_id) {
+    const { error: inscError } = await supabase
+      .from('inscripcion')
+      .insert({ competidor_id: comp.id, categoria_id, torneo_id: datos.torneo_id })
+    if (inscError) throw inscError
+  }
 
-export async function marcarPendiente(competidorId) {
-  const { data, error } = await supabase
-    .from('competidor')
-    .update({ estado: 'pendiente_asignacion' })
-    .eq('id', competidorId)
-    .select()
-    .single()
-  if (error) throw error
-  return data
+  return fetchCompetidorById(comp.id)
 }
 
 export async function deleteCompetidor(id) {
@@ -118,20 +117,28 @@ export async function asignarLado(competidorId, lado) {
 }
 
 export async function limpiarLadosCategoria(categoriaId) {
+  const { data: inscs, error: inscError } = await supabase
+    .from('inscripcion')
+    .select('competidor_id')
+    .eq('categoria_id', categoriaId)
+  if (inscError) throw inscError
+
+  const ids = (inscs || []).map((i) => i.competidor_id)
+  if (!ids.length) return
+
   const { error } = await supabase
     .from('competidor')
     .update({ lado: null })
-    .eq('categoria_id', categoriaId)
+    .in('id', ids)
   if (error) throw error
 }
 
 export async function insertCompetidorPorLink(datos, linkId) {
   const fechaNac = datos.fecha_nacimiento || (datos.edad != null ? edadAFechaNacimiento(datos.edad) : null)
-  const { data, error } = await supabase
+  const { data: comp, error: compError } = await supabase
     .from('competidor')
     .insert({
       torneo_id: datos.torneo_id,
-      categoria_id: datos.categoria_id,
       dojo_id: datos.dojo_id,
       nombre: datos.nombre,
       apellido: datos.apellido,
@@ -142,7 +149,21 @@ export async function insertCompetidorPorLink(datos, linkId) {
       estado: 'inscrito',
       link_inscripcion_id: linkId,
     })
-    .select('*, categoria:categoria_id(id, nombre, modalidad)')
+    .select('id')
+    .single()
+  if (compError) throw compError
+
+  if (datos.categoria_id && datos.torneo_id) {
+    const { error: inscError } = await supabase
+      .from('inscripcion')
+      .insert({ competidor_id: comp.id, categoria_id: datos.categoria_id, torneo_id: datos.torneo_id })
+    if (inscError) throw inscError
+  }
+
+  const { data, error } = await supabase
+    .from('competidor')
+    .select('*, inscripciones:inscripcion(id, categoria_id, categoria(id, nombre, modalidad))')
+    .eq('id', comp.id)
     .single()
   if (error) throw error
   return data
@@ -151,7 +172,7 @@ export async function insertCompetidorPorLink(datos, linkId) {
 export async function fetchCompetidoresPorLink(linkId) {
   const { data, error } = await supabase
     .from('competidor')
-    .select('*, categoria:categoria_id(id, nombre, modalidad)')
+    .select('*, inscripciones:inscripcion(id, categoria_id, categoria(id, nombre, modalidad))')
     .eq('link_inscripcion_id', linkId)
     .order('created_at', { ascending: true })
   if (error) throw error

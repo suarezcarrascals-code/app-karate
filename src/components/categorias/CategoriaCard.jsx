@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { UsersThree, Trash } from '@phosphor-icons/react'
+import { UsersThree, Trash, UserPlus } from '@phosphor-icons/react'
 import useTatamiStore from '../../stores/useTatamiStore'
 import useCategoriaStore from '../../stores/useCategoriaStore'
 import useCompetidorStore from '../../stores/useCompetidorStore'
@@ -50,8 +50,11 @@ export default function CategoriaCard({ categoria, competidoresTorneo = [], sele
   const [infoAleatorio, setInfoAleatorio]       = useState(null)
   const [modalCerrar, setModalCerrar]           = useState(false)
   const [modalEliminar, setModalEliminar]       = useState(false)
+  const [modalAgregar, setModalAgregar]         = useState(false)
+  const [busquedaAgregar, setBusquedaAgregar]   = useState('')
   const [eliminando, setEliminando]             = useState(false)
   const [generando, setGenerando]               = useState(false)
+  const [agregando, setAgregando]               = useState(false)
   const [errorBracket, setErrorBracket]         = useState(null)
 
   const navigate = useNavigate()
@@ -63,7 +66,7 @@ export default function CategoriaCard({ categoria, competidoresTorneo = [], sele
   const {
     equipos, loading: loadingEq, error: errorEq,
     fetchEquipos, addEquipo, addEquiposAleatorios, removeEquipo,
-    asignarLadosAleatorio, limpiarLados,
+    asignarLadosAleatorio, limpiarLados, inscribirEnCategoria,
   } = useCompetidorStore()
 
   const tatamiActual = tatamis.find((t) => t.id === categoria.tatami_id)
@@ -71,7 +74,9 @@ export default function CategoriaCard({ categoria, competidoresTorneo = [], sele
   const esEquipo     = categoria.modalidad?.includes('_equipo')
   const esKumiteEq   = categoria.modalidad === 'kumite_equipo'
 
-  const competidoresCat = competidoresTorneo.filter((c) => c.categoria_id === categoria.id)
+  const competidoresCat = competidoresTorneo.filter((c) =>
+    c.inscripciones?.some((i) => i.categoria_id === categoria.id)
+  )
   const equiposCat      = equipos.filter((e) => e.categoria_id === categoria.id)
 
   useEffect(() => {
@@ -91,6 +96,16 @@ export default function CategoriaCard({ categoria, competidoresTorneo = [], sele
     } finally {
       setGenerando(false)
     }
+  }
+
+  async function handleAgregarExistente(competidorId) {
+    setAgregando(true)
+    try {
+      await inscribirEnCategoria(competidorId, categoria.id, torneoId)
+      setModalAgregar(false)
+      setBusquedaAgregar('')
+    } catch { /* error en store */ }
+    finally { setAgregando(false) }
   }
 
   async function handleEliminar() {
@@ -193,6 +208,15 @@ export default function CategoriaCard({ categoria, competidoresTorneo = [], sele
             <button onClick={() => setModalCerrar(true)}
               className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors">
               Cerrar y generar bracket
+            </button>
+          )}
+          {categoria.estado === 'abierta' && (
+            <button
+              onClick={() => setModalAgregar(true)}
+              className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              <UserPlus size={12} />
+              Inscribir existente
             </button>
           )}
           {(categoria.estado === 'cerrada' || categoria.estado === 'en_curso') && (
@@ -396,6 +420,67 @@ export default function CategoriaCard({ categoria, competidoresTorneo = [], sele
           )}
         </div>
       )}
+
+      {/* Modal inscribir competidor existente */}
+      {modalAgregar && (() => {
+        const disponibles = competidoresTorneo.filter(
+          (c) => !c.inscripciones?.some((i) => i.categoria_id === categoria.id)
+        )
+        const filtrados = disponibles.filter((c) =>
+          `${c.nombre} ${c.apellido}`.toLowerCase().includes(busquedaAgregar.toLowerCase())
+        )
+        return (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+              <h3 className="font-semibold text-zinc-100 text-base mb-1">Inscribir en {categoria.nombre}</h3>
+              <p className="text-xs text-zinc-500 mb-3">
+                Seleccioná un competidor ya registrado en el torneo para añadirlo a esta categoría.
+              </p>
+              <input
+                value={busquedaAgregar}
+                onChange={(e) => setBusquedaAgregar(e.target.value)}
+                placeholder="Buscar por nombre..."
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 mb-3 outline-none focus:border-zinc-500"
+              />
+              <div className="max-h-52 overflow-y-auto space-y-1.5 mb-4">
+                {filtrados.length === 0 && (
+                  <p className="text-xs text-zinc-600 text-center py-4">
+                    {busquedaAgregar
+                      ? 'No se encontraron competidores'
+                      : disponibles.length === 0
+                      ? 'Todos los competidores del torneo ya están en esta categoría'
+                      : 'Sin resultados'}
+                  </p>
+                )}
+                {filtrados.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => handleAgregarExistente(c.id)}
+                    disabled={agregando}
+                    className="w-full text-left px-3 py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors disabled:opacity-50 group"
+                  >
+                    <span className="text-sm font-medium text-zinc-100 group-hover:text-white">
+                      {c.nombre} {c.apellido}
+                    </span>
+                    {c.inscripciones?.length > 0 && (
+                      <p className="text-xs text-zinc-500 mt-0.5">
+                        {c.inscripciones.map((i) => i.categoria?.nombre).filter(Boolean).join(' · ')}
+                      </p>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => { setModalAgregar(false); setBusquedaAgregar('') }}
+                disabled={agregando}
+                className="w-full bg-zinc-800 text-zinc-200 py-2.5 rounded-lg font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Modal cerrar inscripciones */}
       {modalCerrar && (
