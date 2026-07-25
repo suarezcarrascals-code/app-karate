@@ -10,40 +10,36 @@ const EDADES = [
   { label: 'Cadet',  rango: '14–15 años' },
   { label: 'Junior', rango: '16–17 años' },
   { label: 'U21',    rango: '18–20 años' },
-  { label: 'Senior', rango: '16+ (kata) · 18+ (kumite)' },
+  { label: 'Senior', rango: 'Kata 16+ · Kumite 18+' },
 ]
 
 export default function GlosarioTerminos() {
   return (
-    <div className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-800/80 py-3 -mx-4 px-4">
-      <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-2">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">
         Guía de categorías
       </p>
 
-      <div className="space-y-2">
-        {/* Modalidades */}
-        <div className="flex flex-wrap gap-1.5">
+      <div className="mb-4">
+        <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-wider mb-2">Modalidad</p>
+        <div className="space-y-2">
           {MODALIDADES.map(({ label, desc }) => (
-            <span
-              key={label}
-              className="inline-flex items-baseline gap-1 text-xs bg-zinc-900 border border-zinc-800 px-2 py-1 rounded-lg"
-            >
-              <span className="font-semibold text-zinc-200">{label}</span>
-              <span className="text-zinc-600">{desc}</span>
-            </span>
+            <div key={label}>
+              <span className="text-xs font-semibold text-zinc-200">{label}</span>
+              <p className="text-[11px] text-zinc-600 leading-snug">{desc}</p>
+            </div>
           ))}
         </div>
+      </div>
 
-        {/* Grupos de edad */}
-        <div className="flex flex-wrap gap-1.5">
+      <div>
+        <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-wider mb-2">Grupos de edad</p>
+        <div className="space-y-2">
           {EDADES.map(({ label, rango }) => (
-            <span
-              key={label}
-              className="inline-flex items-baseline gap-1 text-xs bg-zinc-900 border border-zinc-800 px-2 py-1 rounded-lg"
-            >
-              <span className="font-semibold text-rose-400/80">{label}</span>
-              <span className="text-zinc-600">{rango}</span>
-            </span>
+            <div key={label} className="flex items-baseline justify-between gap-2">
+              <span className="text-xs font-bold text-rose-400/80 shrink-0">{label}</span>
+              <span className="text-[11px] text-zinc-600 text-right leading-snug">{rango}</span>
+            </div>
           ))}
         </div>
       </div>

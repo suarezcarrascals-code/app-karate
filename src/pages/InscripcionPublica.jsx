@@ -135,100 +135,108 @@ export default function InscripcionPublica() {
         className="pointer-events-none absolute inset-x-0 top-0 h-64"
         style={{ background: 'radial-gradient(60% 100% at 50% 0%, rgb(225 29 72 / 0.06), transparent)' }}
       />
-      <div className="max-w-lg mx-auto px-4 py-8 relative">
+      <div className="max-w-4xl mx-auto px-4 py-8 relative">
+        <div className="flex gap-5 items-start">
 
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-b from-rose-600 to-rose-700 flex items-center justify-center shrink-0">
-              <span className="text-white text-[10px] font-black">K</span>
-            </div>
-            <p className="text-xs text-zinc-500 uppercase tracking-widest truncate">
-              {link.torneo?.nombre}
-            </p>
-          </div>
-          <h1 className="text-2xl font-black text-zinc-100 tracking-tight">
-            {link.dojo?.nombre}
-          </h1>
+          {/* LEFT — contenido principal */}
+          <div className="flex-1 min-w-0">
 
-          {/* Cupo del club */}
-          <div className="mt-4 bg-zinc-900 border border-zinc-800 rounded-xl p-3.5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-zinc-500">Cupo del club</span>
-              <span className={`text-sm font-bold tabular-nums ${cupoLleno ? 'text-rose-400' : 'text-zinc-200'}`}>
-                {atletas.length} / {link.limite_atletas}
-                <span className="text-zinc-600 font-normal text-xs ml-1.5">atletas</span>
-              </span>
+            {/* Header */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-md bg-gradient-to-b from-rose-600 to-rose-700 flex items-center justify-center shrink-0">
+                  <span className="text-white text-[10px] font-black">K</span>
+                </div>
+                <p className="text-xs text-zinc-500 uppercase tracking-widest truncate">
+                  {link.torneo?.nombre}
+                </p>
+              </div>
+              <h1 className="text-2xl font-black text-zinc-100 tracking-tight">
+                {link.dojo?.nombre}
+              </h1>
+
+              {/* Cupo del club */}
+              <div className="mt-4 bg-zinc-900 border border-zinc-800 rounded-xl p-3.5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-zinc-500">Cupo del club</span>
+                  <span className={`text-sm font-bold tabular-nums ${cupoLleno ? 'text-rose-400' : 'text-zinc-200'}`}>
+                    {atletas.length} / {link.limite_atletas}
+                    <span className="text-zinc-600 font-normal text-xs ml-1.5">atletas</span>
+                  </span>
+                </div>
+                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${cupoLleno ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                    style={{ width: `${porcentajeCupo}%` }}
+                  />
+                </div>
+                {cupoLleno && (
+                  <p className="text-xs text-rose-400 font-medium mt-2">Cupo completo</p>
+                )}
+              </div>
             </div>
-            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${cupoLleno ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                style={{ width: `${porcentajeCupo}%` }}
-              />
-            </div>
-            {cupoLleno && (
-              <p className="text-xs text-rose-400 font-medium mt-2">Cupo completo</p>
+
+            {/* Formulario o mensaje de cupo */}
+            {cupoLleno ? (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center mb-6">
+                <p className="text-zinc-400 font-medium mb-1">Cupo completo para tu club</p>
+                <p className="text-zinc-600 text-sm">
+                  Se inscribieron los {link.limite_atletas} atletas acordados.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm font-semibold text-zinc-300">
+                    Agregar atleta ({link.limite_atletas - atletas.length} cupo{link.limite_atletas - atletas.length !== 1 ? 's' : ''} restante{link.limite_atletas - atletas.length !== 1 ? 's' : ''})
+                  </p>
+                  <button
+                    onClick={() => setMostrarCSV(true)}
+                    className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <UploadSimple size={13} />
+                    Importar CSV
+                  </button>
+                </div>
+                <AtletaForm
+                  categorias={categorias}
+                  onAgregar={handleAgregar}
+                  loading={loadingAdd}
+                />
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* Formulario o mensaje de cupo */}
-        {cupoLleno ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center mb-6">
-            <p className="text-zinc-400 font-medium mb-1">Cupo completo para tu club</p>
-            <p className="text-zinc-600 text-sm">
-              Se inscribieron los {link.limite_atletas} atletas acordados.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-zinc-300">
-                Agregar atleta ({link.limite_atletas - atletas.length} cupo{link.limite_atletas - atletas.length !== 1 ? 's' : ''} restante{link.limite_atletas - atletas.length !== 1 ? 's' : ''})
-              </p>
-              <button
-                onClick={() => setMostrarCSV(true)}
-                className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                <UploadSimple size={13} />
-                Importar CSV
-              </button>
-            </div>
-            <AtletaForm
-              categorias={categorias}
-              onAgregar={handleAgregar}
-              loading={loadingAdd}
-            />
-          </div>
-        )}
+            {/* Error */}
+            {error && (
+              <div className="bg-rose-950/40 border border-rose-900/60 text-rose-300 px-4 py-3 rounded-xl mb-4 text-sm">
+                {error}
+              </div>
+            )}
 
-        {/* Error */}
-        {error && (
-          <div className="bg-rose-950/40 border border-rose-900/60 text-rose-300 px-4 py-3 rounded-xl mb-4 text-sm">
-            {error}
-          </div>
-        )}
+            {/* Lista de atletas inscritos */}
+            {atletas.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-2">
+                  Atletas inscritos
+                </p>
+                <div className="space-y-2">
+                  {atletas.map((a, i) => (
+                    <AtletaInscritoCard key={a.id} atleta={a} numero={i + 1} />
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* Lista de atletas inscritos */}
-        {atletas.length > 0 && (
-          <div className="mb-6">
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-2">
-              Atletas inscritos
-            </p>
-            <div className="space-y-2">
-              {atletas.map((a, i) => (
-                <AtletaInscritoCard key={a.id} atleta={a} numero={i + 1} />
-              ))}
+          </div>
+
+          {/* RIGHT — sidebar sticky */}
+          <div className="w-56 shrink-0 sticky top-4 self-start">
+            <div className="max-h-[calc(100vh-2rem)] overflow-y-auto space-y-4 pb-4">
+              <GlosarioTerminos />
+              <CategoriaDisplay categorias={categorias} />
             </div>
           </div>
-        )}
 
-        {/* Glosario sticky + categorías disponibles */}
-        <div className="mb-6">
-          <GlosarioTerminos />
-          <div className="pt-4">
-            <CategoriaDisplay categorias={categorias} />
-          </div>
         </div>
 
         {mostrarCSV && (

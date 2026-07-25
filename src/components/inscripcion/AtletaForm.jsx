@@ -190,7 +190,7 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
           </p>
         )}
 
-        <div className="space-y-3">
+        <div className="max-h-60 overflow-y-auto rounded-xl border border-zinc-700/60 p-3 space-y-3">
           {GRUPOS_MODALIDAD.map(({ key, label }) => {
             const items = categorias?.filter((c) => c.modalidad === key) ?? []
             if (items.length === 0) return null
