@@ -7,6 +7,7 @@ import { insertCompetidorPorLink, fetchCompetidoresPorLink } from '../lib/compet
 import AtletaForm from '../components/inscripcion/AtletaForm'
 import AtletaInscritoCard from '../components/inscripcion/AtletaInscritoCard'
 import CategoriaDisplay from '../components/inscripcion/CategoriaDisplay'
+import GlosarioTerminos from '../components/inscripcion/GlosarioTerminos'
 import ImportarCSVModal from '../components/inscripcion/ImportarCSVModal'
 
 export default function InscripcionPublica() {
@@ -222,9 +223,12 @@ export default function InscripcionPublica() {
           </div>
         )}
 
-        {/* Categorías disponibles */}
+        {/* Glosario sticky + categorías disponibles */}
         <div className="mb-6">
-          <CategoriaDisplay categorias={categorias} />
+          <GlosarioTerminos />
+          <div className="pt-4">
+            <CategoriaDisplay categorias={categorias} />
+          </div>
         </div>
 
         {mostrarCSV && (
