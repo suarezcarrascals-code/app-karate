@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+html {
+  font-family: 'Outfit', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+  background-color: #09090b;
+}
+
+::selection {
+  background-color: rgb(225 29 72 / 0.35);
+  color: #fafafa;
+}
+
+/* Focus visible consistente en toda la app */
+:focus-visible {
+  outline: 2px solid rgb(225 29 72 / 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Scrollbar refinado */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f46 transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #3f3f46;
+  border-radius: 8px;
+  border: 3px solid #09090b;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #52525b;
+}
+
+/* Números siempre tabulares en datos */
+.tabular-nums,
+input[type="number"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Make native date/select inputs respect dark theme on all browsers */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+}
+
+select option {
+  background-color: #27272a;
+  color: #f4f4f5;
+}
+
+/* Quitar spinners de inputs numéricos donde molestan visualmente */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Animación de entrada sutil para modales */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .animate-modal-in {
+    animation: modal-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .animate-overlay-in {
+    animation: overlay-in 0.15s ease-out;
+  }
+}
