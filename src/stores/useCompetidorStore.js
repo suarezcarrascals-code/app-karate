@@ -5,7 +5,7 @@ import {
   fetchEquipos, insertEquipo, deleteEquipo,
   asignarLado, limpiarLadosCategoria,
 } from '../lib/competidores'
-import { insertInscripcion } from '../lib/inscripciones'
+import { insertInscripcion, deleteInscripcionByCC } from '../lib/inscripciones'
 
 function shuffle(arr) {
   return [...arr].sort(() => Math.random() - 0.5)
@@ -59,6 +59,25 @@ const useCompetidorStore = create((set, get) => ({
       return [actualizado]
     } catch (err) {
       set({ error: err.message, loading: false })
+      throw err
+    }
+  },
+
+  // Quita a un competidor de una categoría eliminando su inscripcion
+  quitarDeCategoria: async (competidorId, categoriaId) => {
+    set({ error: null })
+    try {
+      await deleteInscripcionByCC(competidorId, categoriaId)
+      set((state) => ({
+        competidores: state.competidores.map((c) =>
+          c.id !== competidorId ? c : {
+            ...c,
+            inscripciones: c.inscripciones.filter((i) => i.categoria_id !== categoriaId),
+          }
+        ),
+      }))
+    } catch (err) {
+      set({ error: err.message })
       throw err
     }
   },

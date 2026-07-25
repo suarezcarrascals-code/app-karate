@@ -153,10 +153,12 @@ export async function insertCompetidorPorLink(datos, linkId) {
     .single()
   if (compError) throw compError
 
-  if (datos.categoria_id && datos.torneo_id) {
+  // Soporta tanto categoria_id (singular) como categoria_ids (array)
+  const ids = datos.categoria_ids ?? (datos.categoria_id ? [datos.categoria_id] : [])
+  for (const catId of ids) {
     const { error: inscError } = await supabase
       .from('inscripcion')
-      .insert({ competidor_id: comp.id, categoria_id: datos.categoria_id, torneo_id: datos.torneo_id })
+      .insert({ competidor_id: comp.id, categoria_id: catId, torneo_id: datos.torneo_id })
     if (inscError) throw inscError
   }
 

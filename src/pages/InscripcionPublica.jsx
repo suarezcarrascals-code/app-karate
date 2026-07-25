@@ -75,13 +75,15 @@ export default function InscripcionPublica() {
     setLoadingAdd(true)
     setError(null)
     try {
-      const categoria = categorias.find((c) => c.id === datos.categoria_id)
+      const ids = datos.categoria_ids ?? (datos.categoria_id ? [datos.categoria_id] : [])
+      const primeraCategoria = categorias.find((c) => c.id === ids[0])
       const nuevo = await insertCompetidorPorLink(
         {
           ...datos,
           torneo_id: link.torneo_id,
           dojo_id: link.dojo_id,
-          modalidad: categoria?.modalidad ?? null,
+          modalidad: primeraCategoria?.modalidad ?? null,
+          categoria_ids: ids,
         },
         link.id
       )

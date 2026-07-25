@@ -111,7 +111,7 @@ export default function CompetidoresPage() {
       {competidores.length > 0 && (
         <div className="grid gap-3">
           {competidores.map((c) => (
-            <CompetidorCard key={c.id} competidor={c} torneoEstado={torneo?.estado} />
+            <CompetidorCard key={c.id} competidor={c} torneoEstado={torneo?.estado} categorias={categorias} />
           ))}
         </div>
       )}

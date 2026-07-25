@@ -17,7 +17,7 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
   const [edad, setEdad] = useState('')
   const [peso, setPeso] = useState('')
   const [genero, setGenero] = useState('')
-  const [categoriaId, setCategoriaId] = useState('')
+  const [categoriasIds, setCategoriasIds] = useState(new Set())
   const [errores, setErrores] = useState({})
   const [sugeridas, setSugeridas] = useState([])
 
@@ -30,9 +30,22 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
       { edad: parseInt(edad), peso: peso ? parseFloat(peso) : null, genero },
       categorias
     )
-    setSugeridas(compatibles.map((c) => c.id))
-    if (compatibles.length === 1 && !categoriaId) setCategoriaId(compatibles[0].id)
+    const ids = compatibles.map((c) => c.id)
+    setSugeridas(ids)
+    // Pre-seleccionar sugeridas si el atleta no tiene ninguna seleccionada aún
+    if (ids.length > 0 && categoriasIds.size === 0) {
+      setCategoriasIds(new Set(ids))
+    }
   }, [edad, peso, genero, categorias]) // eslint-disable-line
+
+  function toggleCategoria(id) {
+    setCategoriasIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+    setErrores((p) => ({ ...p, categorias: null }))
+  }
 
   function validar() {
     const errs = {}
@@ -40,7 +53,7 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
     if (!apellido.trim()) errs.apellido = 'Requerido'
     if (!edad || isNaN(parseInt(edad)) || parseInt(edad) < 3 || parseInt(edad) > 100) errs.edad = 'Ingresá una edad válida'
     if (!genero) errs.genero = 'Seleccioná el sexo'
-    if (!categoriaId) errs.categoriaId = 'Seleccioná una categoría'
+    if (categoriasIds.size === 0) errs.categorias = 'Seleccioná al menos una categoría'
     return errs
   }
 
@@ -55,13 +68,16 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
       fecha_nacimiento: edadAFechaNacimiento(parseInt(edad)),
       peso: peso ? parseFloat(peso) : null,
       genero,
-      categoria_id: categoriaId,
+      categoria_ids: [...categoriasIds],
     })
 
     setNombre(''); setApellido(''); setEdad('')
-    setPeso(''); setGenero(''); setCategoriaId('')
-    setErrores({}); setSugeridas([])
+    setPeso(''); setGenero('')
+    setCategoriasIds(new Set()); setErrores({}); setSugeridas([])
   }
+
+  const conocidas = new Set(GRUPOS_MODALIDAD.map((g) => g.key))
+  const otras = categorias?.filter((c) => !conocidas.has(c.modalidad)) ?? []
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -92,7 +108,7 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
         </div>
       </div>
 
-      {/* Sexo — botones */}
+      {/* Sexo */}
       <div>
         <label className={LABEL}>Sexo</label>
         <div className="grid grid-cols-2 gap-2">
@@ -157,50 +173,92 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
         </div>
       </div>
 
-      {/* Categoría */}
+      {/* Categorías — checklist */}
       <div>
-        <label className={LABEL}>Categoría</label>
-        <select
-          value={categoriaId}
-          onChange={(e) => { setCategoriaId(e.target.value); setErrores((p) => ({ ...p, categoriaId: null })) }}
-          className={`${INPUT} cursor-pointer`}
-        >
-          <option value="">Seleccioná una categoría</option>
+        <label className={LABEL}>
+          Categorías
+          {categoriasIds.size > 0 && (
+            <span className="ml-2 normal-case font-normal text-zinc-500">
+              ({categoriasIds.size} seleccionada{categoriasIds.size !== 1 ? 's' : ''})
+            </span>
+          )}
+        </label>
+
+        {sugeridas.length > 0 && (
+          <p className="text-xs text-emerald-400/80 mb-2">
+            ★ Categorías sugeridas según los datos del atleta
+          </p>
+        )}
+
+        <div className="space-y-3">
           {GRUPOS_MODALIDAD.map(({ key, label }) => {
             const items = categorias?.filter((c) => c.modalidad === key) ?? []
             if (items.length === 0) return null
             return (
-              <optgroup key={key} label={label}>
-                {items.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {sugeridas.includes(cat.id) ? '★ ' : ''}{cat.nombre}
-                  </option>
-                ))}
-              </optgroup>
+              <div key={key}>
+                <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">{label}</p>
+                <div className="space-y-1.5">
+                  {items.map((cat) => {
+                    const checked = categoriasIds.has(cat.id)
+                    const sugerida = sugeridas.includes(cat.id)
+                    return (
+                      <label
+                        key={cat.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                          checked
+                            ? 'bg-rose-950/30 border-rose-700/50 text-zinc-100'
+                            : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleCategoria(cat.id)}
+                          className="w-4 h-4 accent-rose-600 shrink-0"
+                        />
+                        <span className="text-sm flex-1">
+                          {sugerida && <span className="text-emerald-400 mr-1">★</span>}
+                          {cat.nombre}
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
             )
           })}
-          {/* Categorías con modalidad no estándar */}
-          {(() => {
-            const conocidas = new Set(GRUPOS_MODALIDAD.map((g) => g.key))
-            const otras = categorias?.filter((c) => !conocidas.has(c.modalidad)) ?? []
-            if (otras.length === 0) return null
-            return (
-              <optgroup label="Otras">
-                {otras.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {sugeridas.includes(cat.id) ? '★ ' : ''}{cat.nombre}
-                  </option>
-                ))}
-              </optgroup>
-            )
-          })()}
-        </select>
-        {sugeridas.length > 0 && !errores.categoriaId && (
-          <p className="text-xs text-emerald-400/80 mt-1.5">
-            ★ Categoría sugerida según los datos del atleta
-          </p>
-        )}
-        {errores.categoriaId && <p className="text-rose-400 text-xs mt-1.5">{errores.categoriaId}</p>}
+
+          {otras.length > 0 && (
+            <div>
+              <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">Otras</p>
+              <div className="space-y-1.5">
+                {otras.map((cat) => {
+                  const checked = categoriasIds.has(cat.id)
+                  return (
+                    <label
+                      key={cat.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                        checked
+                          ? 'bg-rose-950/30 border-rose-700/50 text-zinc-100'
+                          : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleCategoria(cat.id)}
+                        className="w-4 h-4 accent-rose-600 shrink-0"
+                      />
+                      <span className="text-sm">{cat.nombre}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {errores.categorias && <p className="text-rose-400 text-xs mt-2">{errores.categorias}</p>}
       </div>
 
       <button
