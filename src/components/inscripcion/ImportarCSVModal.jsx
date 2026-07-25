@@ -7,7 +7,8 @@ export default function ImportarCSVModal({ categorias, onConfirmar, onCancel, lo
   const [paso, setPaso] = useState('inicio') // 'inicio' | 'preview'
   const [filas, setFilas] = useState([])
   const [erroresCSV, setErroresCSV] = useState([])
-  const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState({})
+  // { [idx]: Set<categoriaId> }
+  const [seleccion, setSeleccion] = useState({})
   const [parsando, setParsando] = useState(false)
   const inputRef = useRef()
 
@@ -29,14 +30,15 @@ export default function ImportarCSVModal({ categorias, onConfirmar, onCancel, lo
       setErroresCSV(errores)
       if (parsed.length === 0) { setParsando(false); return }
 
-      const seleccion = {}
+      // Pre-seleccionar todas las categorías compatibles por atleta
+      const inicial = {}
       parsed.forEach((fila, idx) => {
         const sugeridas = encontrarCategoriasCompatibles(fila, categorias)
-        seleccion[idx] = sugeridas.length > 0 ? sugeridas[0].id : ''
+        inicial[idx] = new Set(sugeridas.map((s) => s.id))
       })
 
       setFilas(parsed)
-      setCategoriasSeleccionadas(seleccion)
+      setSeleccion(inicial)
       setPaso('preview')
     } finally {
       setParsando(false)
@@ -44,15 +46,25 @@ export default function ImportarCSVModal({ categorias, onConfirmar, onCancel, lo
     }
   }
 
+  function toggleCat(idx, catId) {
+    setSeleccion((prev) => {
+      const current = new Set(prev[idx] || [])
+      current.has(catId) ? current.delete(catId) : current.add(catId)
+      return { ...prev, [idx]: current }
+    })
+  }
+
   function handleConfirmar() {
-    const atletas = filas.map((fila, idx) => ({
-      ...fila,
-      categoria_id: categoriasSeleccionadas[idx] || null,
-    })).filter((a) => a.categoria_id)
+    const atletas = filas
+      .map((fila, idx) => ({
+        ...fila,
+        categoria_ids: [...(seleccion[idx] || new Set())],
+      }))
+      .filter((a) => a.categoria_ids.length > 0)
     onConfirmar(atletas)
   }
 
-  const sinCategoria = filas.filter((_, idx) => !categoriasSeleccionadas[idx]).length
+  const sinCategoria = filas.filter((_, idx) => !seleccion[idx] || seleccion[idx].size === 0).length
   const listos = filas.length - sinCategoria
 
   return (
@@ -75,7 +87,6 @@ export default function ImportarCSVModal({ categorias, onConfirmar, onCancel, lo
         {/* PASO: INICIO */}
         {paso === 'inicio' && (
           <div className="px-5 py-6 space-y-5">
-            {/* Paso 1: Descargar plantilla */}
             <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4">
               <p className="text-sm font-semibold text-zinc-200 mb-1">Paso 1 — Descargar plantilla</p>
               <p className="text-xs text-zinc-500 mb-3">
@@ -90,7 +101,6 @@ export default function ImportarCSVModal({ categorias, onConfirmar, onCancel, lo
               </button>
             </div>
 
-            {/* Columnas requeridas */}
             <div className="text-xs text-zinc-600 space-y-1 px-1">
               <p className="font-medium text-zinc-500 mb-2">Columnas requeridas:</p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-1">
@@ -102,7 +112,6 @@ export default function ImportarCSVModal({ categorias, onConfirmar, onCancel, lo
               </div>
             </div>
 
-            {/* Paso 2: Subir archivo */}
             <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4">
               <p className="text-sm font-semibold text-zinc-200 mb-1">Paso 2 — Subir el archivo</p>
               <p className="text-xs text-zinc-500 mb-3">
@@ -127,7 +136,6 @@ export default function ImportarCSVModal({ categorias, onConfirmar, onCancel, lo
               </button>
             </div>
 
-            {/* Errores de parseo */}
             {erroresCSV.length > 0 && (
               <div className="bg-rose-950/40 border border-rose-900/60 rounded-xl p-4 space-y-1">
                 <p className="text-xs font-semibold text-rose-300 flex items-center gap-1.5 mb-2">
@@ -144,7 +152,6 @@ export default function ImportarCSVModal({ categorias, onConfirmar, onCancel, lo
         {/* PASO: PREVIEW */}
         {paso === 'preview' && (
           <div className="px-5 py-4">
-            {/* Resumen */}
             <div className="flex items-center gap-4 mb-4 text-xs">
               <span className="flex items-center gap-1.5 text-emerald-400">
                 <CheckCircle size={14} />
@@ -153,47 +160,66 @@ export default function ImportarCSVModal({ categorias, onConfirmar, onCancel, lo
               {sinCategoria > 0 && (
                 <span className="flex items-center gap-1.5 text-amber-400">
                   <Warning size={14} />
-                  {sinCategoria} sin categoría asignada (se omitirán)
+                  {sinCategoria} sin categoría (se omitirán)
                 </span>
               )}
             </div>
 
-            {/* Tabla de atletas */}
-            <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
               {filas.map((fila, idx) => {
                 const sugeridas = encontrarCategoriasCompatibles(fila, categorias)
-                const catId = categoriasSeleccionadas[idx]
+                const sugeridaIds = new Set(sugeridas.map((s) => s.id))
+                const seleccionadas = seleccion[idx] || new Set()
+                const tieneAlguna = seleccionadas.size > 0
 
                 return (
-                  <div key={idx} className={`bg-zinc-800/60 border rounded-lg px-3 py-2.5 ${catId ? 'border-zinc-700/50' : 'border-amber-900/40'}`}>
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-zinc-100">
-                          {fila.nombre} {fila.apellido}
-                        </p>
-                        <p className="text-xs text-zinc-500 mt-0.5">
-                          {fila.edad} años · {fila.peso ? `${fila.peso} kg · ` : ''}{fila.genero}
-                        </p>
-                      </div>
-                      <select
-                        value={catId}
-                        onChange={(e) => setCategoriasSeleccionadas((prev) => ({ ...prev, [idx]: e.target.value }))}
-                        className="bg-zinc-700 border border-zinc-600 rounded-lg px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-rose-500 max-w-[200px]"
-                      >
-                        <option value="">Sin categoría</option>
-                        {categorias.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {sugeridas.some((s) => s.id === cat.id) ? '★ ' : ''}{cat.nombre}
-                          </option>
-                        ))}
-                      </select>
+                  <div
+                    key={idx}
+                    className={`bg-zinc-800/60 border rounded-xl px-3 py-3 ${tieneAlguna ? 'border-zinc-700/50' : 'border-amber-900/40'}`}
+                  >
+                    {/* Datos del atleta */}
+                    <div className="flex items-baseline justify-between gap-2 mb-2">
+                      <p className="text-sm font-semibold text-zinc-100">
+                        {fila.nombre} {fila.apellido}
+                      </p>
+                      <p className="text-xs text-zinc-500 shrink-0">
+                        {fila.edad} años{fila.peso ? ` · ${fila.peso} kg` : ''} · {fila.genero}
+                      </p>
                     </div>
+
+                    {/* Checklist de categorías */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {categorias.map((cat) => {
+                        const checked = seleccionadas.has(cat.id)
+                        const sugerida = sugeridaIds.has(cat.id)
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => toggleCat(idx, cat.id)}
+                            className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all ${
+                              checked
+                                ? 'bg-rose-950/40 border-rose-600/50 text-rose-200'
+                                : 'bg-zinc-700/40 border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300'
+                            }`}
+                          >
+                            {sugerida && <span className="text-emerald-400 mr-1">★</span>}
+                            {cat.nombre}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {seleccionadas.size > 0 && (
+                      <p className="text-[11px] text-zinc-600 mt-2">
+                        {seleccionadas.size} categoría{seleccionadas.size !== 1 ? 's' : ''} seleccionada{seleccionadas.size !== 1 ? 's' : ''}
+                      </p>
+                    )}
                   </div>
                 )
               })}
             </div>
 
-            {/* Errores de filas omitidas */}
             {erroresCSV.length > 0 && (
               <div className="mt-3 bg-rose-950/30 border border-rose-900/50 rounded-lg px-3 py-2">
                 <p className="text-xs text-rose-400 font-medium mb-1">Filas omitidas por errores:</p>
@@ -203,7 +229,6 @@ export default function ImportarCSVModal({ categorias, onConfirmar, onCancel, lo
               </div>
             )}
 
-            {/* Botón para cargar otro archivo */}
             <div className="mt-3">
               <input ref={inputRef} type="file" accept=".csv,text/csv" onChange={handleArchivo} className="hidden" />
               <button
