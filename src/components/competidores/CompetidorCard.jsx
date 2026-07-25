@@ -56,9 +56,9 @@ export default function CompetidorCard({ competidor, torneoEstado }) {
             {competidor.cinturon ? ` · ${competidor.cinturon}` : ''}
           </p>
 
-          {(competidor.categoria || competidor.categoria_id) && (
+          {competidor.inscripciones?.length > 0 && (
             <p className="text-xs text-rose-400/70 mt-1.5 font-medium">
-              {competidor.categoria?.nombre || 'Categoría asignada'}
+              {competidor.inscripciones.map((i) => i.categoria?.nombre).filter(Boolean).join(' · ')}
             </p>
           )}
         </div>
