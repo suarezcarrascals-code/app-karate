@@ -1,7 +1,12 @@
 import { create } from 'zustand'
-import { fetchCombates, persistirBracket, actualizarResultado, eliminarCombatesCategoria } from '../lib/combates'
+import {
+  fetchCombates,
+  persistirBracket,
+  eliminarCombatesCategoria,
+  avanzarGanador,
+} from '../lib/combates'
 
-const useCombateStore = create((set, get) => ({
+const useCombateStore = create((set) => ({
   combates: [],
   loading: false,
   error: null,
@@ -36,6 +41,17 @@ const useCombateStore = create((set, get) => ({
     } catch (err) {
       set({ error: err.message, loading: false })
       throw err
+    }
+  },
+
+  declararGanador: async (combateId, ganadorId, categoriaId) => {
+    set({ loading: true, error: null })
+    try {
+      await avanzarGanador(combateId, ganadorId, categoriaId)
+      const combates = await fetchCombates(categoriaId)
+      set({ combates, loading: false })
+    } catch (err) {
+      set({ error: err.message, loading: false })
     }
   },
 }))

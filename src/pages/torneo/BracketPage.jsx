@@ -17,7 +17,7 @@ export default function BracketPage() {
   const [loadingCtx, setLoadingCtx] = useState(true)
   const [confirmRegen, setConfirmRegen] = useState(false)
 
-  const { combates, loading, error, fetchCombates, resetBracket, generarBracket } = useCombateStore()
+  const { combates, loading, error, fetchCombates, resetBracket, generarBracket, declararGanador } = useCombateStore()
 
   useEffect(() => {
     async function cargar() {
@@ -146,7 +146,11 @@ export default function BracketPage() {
       )}
 
       {!loading && combates.length > 0 && (
-        <BracketView combates={combates} competidores={competidores} />
+        <BracketView
+          combates={combates}
+          competidores={competidores}
+          onDeclararGanador={(combateId, ganadorId) => declararGanador(combateId, ganadorId, catId)}
+        />
       )}
     </div>
   )
