@@ -9,7 +9,7 @@ function nombreRonda(numero, totalMainRondas) {
 }
 
 function CombateCard({ combate, competidores, onDeclararGanador, label }) {
-  const [seleccionado, setSeleccionado] = useState(null) // competidor_id pendiente de confirmar
+  const [confirmando, setConfirmando] = useState(null) // 'rojo' | 'azul' | null
 
   function buscar(id) {
     return id ? competidores.find((c) => c.id === id) ?? null : null
@@ -25,20 +25,15 @@ function CombateCard({ combate, competidores, onDeclararGanador, label }) {
     return finalizado && combate.ganador_id === id
   }
 
-  function handleSeleccionar(id) {
-    setSeleccionado((prev) => (prev === id ? null : id))
-  }
-
   function handleConfirmar() {
-    onDeclararGanador(combate.id, seleccionado)
-    setSeleccionado(null)
+    const id = confirmando === 'rojo' ? combate.competidor_rojo_id : combate.competidor_azul_id
+    onDeclararGanador(combate.id, id)
+    setConfirmando(null)
   }
-
-  const seleccionColor =
-    seleccionado === combate.competidor_rojo_id ? 'text-rose-300' : 'text-sky-300'
 
   return (
     <div className={`rounded-xl border overflow-hidden ${esBye ? 'border-zinc-800/40 opacity-40' : 'border-zinc-700'}`}>
+
       {label && (
         <div className="px-3 py-1 bg-zinc-800/60 border-b border-zinc-800">
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{label}</p>
@@ -46,20 +41,9 @@ function CombateCard({ combate, competidores, onDeclararGanador, label }) {
       )}
 
       {/* Rojo */}
-      <div
-        onClick={() => puedeDeclarar && handleSeleccionar(combate.competidor_rojo_id)}
-        className={`flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 transition-colors ${
-          puedeDeclarar ? 'cursor-pointer' : ''
-        } ${
-          esGanador(combate.competidor_rojo_id)
-            ? 'bg-rose-950/50'
-            : seleccionado === combate.competidor_rojo_id
-            ? 'bg-rose-900/30 ring-1 ring-inset ring-rose-700/60'
-            : puedeDeclarar
-            ? 'bg-zinc-900 hover:bg-zinc-800/70'
-            : 'bg-zinc-900'
-        }`}
-      >
+      <div className={`flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 ${
+        esGanador(combate.competidor_rojo_id) ? 'bg-rose-950/50' : 'bg-zinc-900'
+      }`}>
         <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
         <span className={`flex-1 text-sm leading-tight truncate ${rojo ? 'text-zinc-100' : 'text-zinc-600 italic'}`}>
           {rojo ? `${rojo.nombre} ${rojo.apellido}` : esBye ? 'BYE' : '—'}
@@ -75,20 +59,9 @@ function CombateCard({ combate, competidores, onDeclararGanador, label }) {
       </div>
 
       {/* Azul */}
-      <div
-        onClick={() => puedeDeclarar && handleSeleccionar(combate.competidor_azul_id)}
-        className={`flex items-center gap-2 px-3 py-2.5 transition-colors ${
-          puedeDeclarar ? 'cursor-pointer' : ''
-        } ${
-          esGanador(combate.competidor_azul_id)
-            ? 'bg-sky-950/50'
-            : seleccionado === combate.competidor_azul_id
-            ? 'bg-sky-900/30 ring-1 ring-inset ring-sky-700/60'
-            : puedeDeclarar
-            ? 'bg-zinc-900 hover:bg-zinc-800/70'
-            : 'bg-zinc-900'
-        }`}
-      >
+      <div className={`flex items-center gap-2 px-3 py-2.5 ${
+        esGanador(combate.competidor_azul_id) ? 'bg-sky-950/50' : 'bg-zinc-900'
+      }`}>
         <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
         <span className={`flex-1 text-sm leading-tight truncate ${azul ? 'text-zinc-100' : 'text-zinc-600 italic'}`}>
           {azul ? `${azul.nombre} ${azul.apellido}` : esBye ? 'BYE' : '—'}
@@ -103,30 +76,41 @@ function CombateCard({ combate, competidores, onDeclararGanador, label }) {
         )}
       </div>
 
-      {/* Barra inferior: instrucción o confirmación */}
-      {puedeDeclarar && !seleccionado && (
-        <div className="px-3 py-1.5 bg-zinc-800/40 border-t border-zinc-800/60">
-          <p className="text-[10px] text-zinc-600">Tocá un competidor para declarar ganador</p>
+      {/* Botones de declarar ganador */}
+      {puedeDeclarar && confirmando === null && (
+        <div className="flex gap-1.5 px-2.5 py-2 border-t border-zinc-800 bg-zinc-800/30">
+          <button
+            onClick={() => setConfirmando('rojo')}
+            className="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-rose-950/60 border border-rose-800/50 text-rose-300 hover:bg-rose-900/60 transition-colors"
+          >
+            Rojo gana
+          </button>
+          <button
+            onClick={() => setConfirmando('azul')}
+            className="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-sky-950/60 border border-sky-800/50 text-sky-300 hover:bg-sky-900/60 transition-colors"
+          >
+            Azul gana
+          </button>
         </div>
       )}
 
-      {puedeDeclarar && seleccionado && (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/60 border-t border-zinc-700/60">
-          <p className={`text-[11px] font-semibold flex-1 ${seleccionColor}`}>
-            {seleccionado === combate.competidor_rojo_id
-              ? `${rojo?.nombre} ${rojo?.apellido}`
-              : `${azul?.nombre} ${azul?.apellido}`}{' '}
-            gana — ¿confirmar?
+      {/* Confirmación */}
+      {puedeDeclarar && confirmando !== null && (
+        <div className="flex items-center gap-2 px-2.5 py-2 border-t border-zinc-700 bg-zinc-800/50">
+          <p className={`text-[11px] font-semibold flex-1 ${confirmando === 'rojo' ? 'text-rose-300' : 'text-sky-300'}`}>
+            {confirmando === 'rojo'
+              ? `${rojo?.nombre} gana — ¿confirmar?`
+              : `${azul?.nombre} gana — ¿confirmar?`}
           </p>
           <button
             onClick={handleConfirmar}
-            className="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-900/60 border border-emerald-700/50 text-emerald-300 hover:bg-emerald-800/60 font-semibold transition-colors"
+            className="px-3 py-1 text-[11px] font-bold rounded-lg bg-emerald-900/60 border border-emerald-700/50 text-emerald-300 hover:bg-emerald-800/60 transition-colors"
           >
             Sí
           </button>
           <button
-            onClick={() => setSeleccionado(null)}
-            className="text-[11px] px-2.5 py-1 rounded-lg bg-zinc-700/50 border border-zinc-700 text-zinc-400 hover:bg-zinc-700 transition-colors"
+            onClick={() => setConfirmando(null)}
+            className="px-3 py-1 text-[11px] rounded-lg bg-zinc-700/50 border border-zinc-700 text-zinc-400 hover:bg-zinc-700 transition-colors"
           >
             No
           </button>
@@ -145,7 +129,6 @@ export default function BracketView({ combates, competidores, onDeclararGanador 
 
   if (mainCombates.length === 0) return null
 
-  // Agrupar por ronda
   const porRonda = mainCombates.reduce((acc, c) => {
     if (!acc[c.ronda]) acc[c.ronda] = []
     acc[c.ronda].push(c)
@@ -168,7 +151,7 @@ export default function BracketView({ combates, competidores, onDeclararGanador 
                 {nombreRonda(numRonda, totalMainRondas)}
               </p>
 
-              <div className={`flex flex-col gap-3 ${!esUltimaRonda ? 'justify-around' : ''}`}>
+              <div className="flex flex-col gap-3">
                 {combatesRonda.map((c) => (
                   <CombateCard
                     key={c.id}
@@ -178,7 +161,6 @@ export default function BracketView({ combates, competidores, onDeclararGanador 
                   />
                 ))}
 
-                {/* 3er puesto: en la misma columna que la final, debajo */}
                 {esUltimaRonda && tercerPuesto && (
                   <div className="mt-2">
                     <CombateCard

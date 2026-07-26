@@ -81,12 +81,16 @@ export async function avanzarGanador(combateId, ganadorId, categoriaId) {
     .single()
   if (e1) throw e1
 
-  // 2. Marcar como finalizado
-  const { error: e2 } = await supabase
+  // 2. Marcar como finalizado — .select() para detectar fallas silenciosas de RLS
+  const { data: updated, error: e2 } = await supabase
     .from('combate')
     .update({ ganador_id: ganadorId, estado: 'finalizado' })
     .eq('id', combateId)
+    .select('id')
   if (e2) throw e2
+  if (!updated || updated.length === 0) {
+    throw new Error('No se pudo guardar el resultado. Verificá los permisos de la tabla combate en Supabase (UPDATE para authenticated).')
+  }
 
   // 3. Obtener todos los combates para determinar ronda final
   const { data: todos, error: e3 } = await supabase

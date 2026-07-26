@@ -130,7 +130,7 @@ export default function BracketPage() {
         </div>
       )}
 
-      {loading && (
+      {loading && combates.length === 0 && (
         <div className="flex justify-center py-12">
           <div className="w-6 h-6 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
         </div>
@@ -145,12 +145,14 @@ export default function BracketPage() {
         </div>
       )}
 
-      {!loading && combates.length > 0 && (
-        <BracketView
-          combates={combates}
-          competidores={competidores}
-          onDeclararGanador={(combateId, ganadorId) => declararGanador(combateId, ganadorId, catId)}
-        />
+      {combates.length > 0 && (
+        <div className={loading ? 'opacity-50 pointer-events-none' : ''}>
+          <BracketView
+            combates={combates}
+            competidores={competidores}
+            onDeclararGanador={(combateId, ganadorId) => declararGanador(combateId, ganadorId, catId)}
+          />
+        </div>
       )}
     </div>
   )
