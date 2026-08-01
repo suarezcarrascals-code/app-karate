@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowsClockwise } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowsClockwise, UserPlus, X } from '@phosphor-icons/react'
 import { fetchTorneoById } from '../../lib/torneos'
 import { fetchCategorias } from '../../lib/categorias'
-import { fetchCompetidores } from '../../lib/competidores'
+import { fetchCompetidores, insertCompetidor } from '../../lib/competidores'
 import useCombateStore from '../../stores/useCombateStore'
 import BracketView from '../../components/brackets/BracketView'
+
+const FORM_INICIAL = { nombre: '', apellido: '', fecha_nacimiento: '', peso: '', genero: '' }
 
 export default function BracketPage() {
   const { id: torneoId, catId } = useParams()
@@ -16,6 +18,11 @@ export default function BracketPage() {
   const [competidores, setCompetidores] = useState([])
   const [loadingCtx, setLoadingCtx] = useState(true)
   const [confirmRegen, setConfirmRegen] = useState(false)
+  const [mostrarFormAgregar, setMostrarFormAgregar] = useState(false)
+  const [formAgregar, setFormAgregar] = useState(FORM_INICIAL)
+  const [erroresAgregar, setErroresAgregar] = useState({})
+  const [advertenciaRegen, setAdvertenciaRegen] = useState(null)
+  const [loadingAgregar, setLoadingAgregar] = useState(false)
 
   const { combates, loading, error, fetchCombates, resetBracket, generarBracket, declararGanador } = useCombateStore()
 
@@ -64,6 +71,59 @@ export default function BracketPage() {
     }
   }
 
+  function handleCambioFormAgregar(e) {
+    const { name, value } = e.target
+    setFormAgregar((prev) => ({ ...prev, [name]: value }))
+    if (erroresAgregar[name]) setErroresAgregar((prev) => ({ ...prev, [name]: null }))
+  }
+
+  function handleSubmitAgregar(e) {
+    e.preventDefault()
+    const errs = {}
+    if (!formAgregar.nombre.trim()) errs.nombre = 'Requerido'
+    if (!formAgregar.apellido.trim()) errs.apellido = 'Requerido'
+    if (!formAgregar.genero) errs.genero = 'Requerido'
+    if (Object.keys(errs).length > 0) { setErroresAgregar(errs); return }
+
+    if (finalizados > 0) {
+      setAdvertenciaRegen({ ...formAgregar })
+      return
+    }
+    ejecutarAgregarYRegen({ ...formAgregar })
+  }
+
+  async function ejecutarAgregarYRegen(datos) {
+    setLoadingAgregar(true)
+    try {
+      await insertCompetidor({
+        nombre: datos.nombre.trim(),
+        apellido: datos.apellido.trim(),
+        fecha_nacimiento: datos.fecha_nacimiento || null,
+        peso: datos.peso ? parseFloat(datos.peso) : null,
+        genero: datos.genero,
+        modalidad: categoria.modalidad,
+        torneo_id: torneoId,
+        categoria_id: catId,
+      })
+
+      const comps = await fetchCompetidores(torneoId)
+      const actualizados = comps.filter((c) => c.inscripciones?.some((i) => i.categoria_id === catId))
+      setCompetidores(actualizados)
+
+      await resetBracket(catId)
+      await generarBracket(catId, categoria.tatami_id, actualizados)
+
+      setMostrarFormAgregar(false)
+      setFormAgregar(FORM_INICIAL)
+      setErroresAgregar({})
+      setAdvertenciaRegen(null)
+    } catch {
+      // error visible en el store
+    } finally {
+      setLoadingAgregar(false)
+    }
+  }
+
   return (
     <div className="max-w-full px-4 py-6">
       <button
@@ -85,7 +145,16 @@ export default function BracketPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {combates.length > 0 && !confirmRegen && (
+          {!confirmRegen && !mostrarFormAgregar && (
+            <button
+              onClick={() => setMostrarFormAgregar(true)}
+              className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <UserPlus size={12} />
+              Agregar
+            </button>
+          )}
+          {combates.length > 0 && !confirmRegen && !mostrarFormAgregar && (
             <button
               onClick={() => setConfirmRegen(true)}
               className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
@@ -124,6 +193,85 @@ export default function BracketPage() {
         </div>
       </div>
 
+      {mostrarFormAgregar && (
+        <div className="mb-5 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-zinc-200">Agregar competidor al bracket</p>
+            <button
+              onClick={() => { setMostrarFormAgregar(false); setFormAgregar(FORM_INICIAL); setErroresAgregar({}) }}
+              className="text-zinc-600 hover:text-zinc-400 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <form onSubmit={handleSubmitAgregar} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <input
+                  type="text" name="nombre" value={formAgregar.nombre}
+                  onChange={handleCambioFormAgregar} placeholder="Nombre *"
+                  className="w-full border border-zinc-700 bg-zinc-800 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40 placeholder:text-zinc-600"
+                />
+                {erroresAgregar.nombre && <p className="text-rose-400 text-xs mt-1">{erroresAgregar.nombre}</p>}
+              </div>
+              <div>
+                <input
+                  type="text" name="apellido" value={formAgregar.apellido}
+                  onChange={handleCambioFormAgregar} placeholder="Apellido *"
+                  className="w-full border border-zinc-700 bg-zinc-800 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40 placeholder:text-zinc-600"
+                />
+                {erroresAgregar.apellido && <p className="text-rose-400 text-xs mt-1">{erroresAgregar.apellido}</p>}
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <select
+                  name="genero" value={formAgregar.genero}
+                  onChange={handleCambioFormAgregar}
+                  className="w-full border border-zinc-700 bg-zinc-800 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+                >
+                  <option value="">Género *</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="femenino">Femenino</option>
+                </select>
+                {erroresAgregar.genero && <p className="text-rose-400 text-xs mt-1">{erroresAgregar.genero}</p>}
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">Nacimiento</label>
+                <input
+                  type="date" name="fecha_nacimiento" value={formAgregar.fecha_nacimiento}
+                  onChange={handleCambioFormAgregar}
+                  className="w-full border border-zinc-700 bg-zinc-800 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+                />
+              </div>
+              <div>
+                <input
+                  type="number" name="peso" value={formAgregar.peso}
+                  onChange={handleCambioFormAgregar} placeholder="Peso (kg)"
+                  step="0.1" min="0"
+                  className="w-full border border-zinc-700 bg-zinc-800 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40 placeholder:text-zinc-600"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                type="submit" disabled={loadingAgregar}
+                className="bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-rose-500 transition-colors disabled:opacity-50"
+              >
+                {loadingAgregar ? 'Guardando...' : 'Agregar y regenerar bracket'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMostrarFormAgregar(false); setFormAgregar(FORM_INICIAL); setErroresAgregar({}) }}
+                className="text-zinc-400 px-4 py-2 rounded-lg text-sm hover:bg-zinc-800 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {error && (
         <div className="bg-rose-950/40 border border-rose-900/60 text-rose-300 px-4 py-3 rounded-xl mb-4 text-sm">
           {error}
@@ -152,6 +300,33 @@ export default function BracketPage() {
             competidores={competidores}
             onDeclararGanador={(combateId, ganadorId) => declararGanador(combateId, ganadorId, catId)}
           />
+        </div>
+      )}
+
+      {advertenciaRegen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+            <p className="text-sm font-semibold text-zinc-100 mb-2">¿Agregar y regenerar?</p>
+            <p className="text-xs text-zinc-400 mb-5">
+              Este bracket ya tiene <span className="text-amber-400 font-semibold">{finalizados} combate{finalizados !== 1 ? 's' : ''} jugado{finalizados !== 1 ? 's' : ''}</span>.
+              Al agregar el competidor, el bracket se reinicia con la nueva distribución y esos resultados se perderán.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAdvertenciaRegen(null)}
+                className="flex-1 bg-zinc-800 text-zinc-300 py-2 rounded-lg text-sm hover:bg-zinc-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => ejecutarAgregarYRegen(advertenciaRegen)}
+                disabled={loadingAgregar}
+                className="flex-1 bg-rose-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-rose-600 transition-colors disabled:opacity-50"
+              >
+                {loadingAgregar ? 'Procesando...' : 'Agregar y regenerar'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
