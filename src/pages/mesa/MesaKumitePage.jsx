@@ -446,10 +446,17 @@ export default function MesaKumitePage() {
           </div>
 
           <div className="text-center">
-            <div className={`text-6xl font-black tabular-nums ${
-              descalificadoAzul ? 'line-through text-zinc-700' : 'text-sky-400'
-            }`}>
-              {marcador.puntosAzul}
+            <div className="relative inline-block">
+              <span className={`text-6xl font-black tabular-nums ${
+                descalificadoAzul ? 'line-through text-zinc-700' : 'text-sky-400'
+              }`}>
+                {marcador.puntosAzul}
+              </span>
+              {marcador.senshu === 'azul' && (
+                <span className="absolute -top-1 -right-5 w-5 h-5 bg-yellow-400 rounded text-[10px] font-black text-zinc-900 flex items-center justify-center leading-none">
+                  S
+                </span>
+              )}
             </div>
             {descalificadoAzul && (
               <p className={`text-[11px] font-black tracking-widest mt-0.5 ${
@@ -475,9 +482,9 @@ export default function MesaKumitePage() {
             </button>
           </div>
 
-          <div className="text-[11px] text-zinc-600 text-center space-x-2 min-h-[16px]">
-            {marcador.yukoAzul > 0 && <span>Y×{marcador.yukoAzul}</span>}
-            {marcador.wazaAriAzul > 0 && <span>WA×{marcador.wazaAriAzul}</span>}
+          <div className="text-[10px] text-zinc-700 text-center tabular-nums min-h-[14px]">
+            {marcador.yukoAzul > 0 && <span className="mr-1">Y×{marcador.yukoAzul}</span>}
+            {marcador.wazaAriAzul > 0 && <span className="mr-1">WA×{marcador.wazaAriAzul}</span>}
             {marcador.ipponAzul > 0 && <span>IP×{marcador.ipponAzul}</span>}
           </div>
 
@@ -485,13 +492,13 @@ export default function MesaKumitePage() {
 
           <button
             onClick={() => toggleSenshu('azul')}
-            className={`text-xs py-1.5 px-3 rounded-lg border font-semibold transition-colors ${
+            className={`text-[11px] py-1 px-2 rounded border transition-colors ${
               marcador.senshu === 'azul'
-                ? 'bg-sky-900/60 border-sky-700 text-sky-200'
-                : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                ? 'bg-yellow-950/40 border-yellow-700/40 text-yellow-500'
+                : 'bg-zinc-900 border-zinc-800 text-zinc-700 hover:text-zinc-500'
             }`}
           >
-            SENSHU {marcador.senshu === 'azul' ? '★' : ''}
+            SENSHU
           </button>
         </div>
 
@@ -504,10 +511,17 @@ export default function MesaKumitePage() {
           </div>
 
           <div className="text-center">
-            <div className={`text-6xl font-black tabular-nums ${
-              descalificadoRojo ? 'line-through text-zinc-700' : 'text-rose-400'
-            }`}>
-              {marcador.puntosRojo}
+            <div className="relative inline-block">
+              <span className={`text-6xl font-black tabular-nums ${
+                descalificadoRojo ? 'line-through text-zinc-700' : 'text-rose-400'
+              }`}>
+                {marcador.puntosRojo}
+              </span>
+              {marcador.senshu === 'rojo' && (
+                <span className="absolute -top-1 -right-5 w-5 h-5 bg-yellow-400 rounded text-[10px] font-black text-zinc-900 flex items-center justify-center leading-none">
+                  S
+                </span>
+              )}
             </div>
             {descalificadoRojo && (
               <p className={`text-[11px] font-black tracking-widest mt-0.5 ${
@@ -533,9 +547,9 @@ export default function MesaKumitePage() {
             </button>
           </div>
 
-          <div className="text-[11px] text-zinc-600 text-center space-x-2 min-h-[16px]">
-            {marcador.yukoRojo > 0 && <span>Y×{marcador.yukoRojo}</span>}
-            {marcador.wazaAriRojo > 0 && <span>WA×{marcador.wazaAriRojo}</span>}
+          <div className="text-[10px] text-zinc-700 text-center tabular-nums min-h-[14px]">
+            {marcador.yukoRojo > 0 && <span className="mr-1">Y×{marcador.yukoRojo}</span>}
+            {marcador.wazaAriRojo > 0 && <span className="mr-1">WA×{marcador.wazaAriRojo}</span>}
             {marcador.ipponRojo > 0 && <span>IP×{marcador.ipponRojo}</span>}
           </div>
 
@@ -543,13 +557,13 @@ export default function MesaKumitePage() {
 
           <button
             onClick={() => toggleSenshu('rojo')}
-            className={`text-xs py-1.5 px-3 rounded-lg border font-semibold transition-colors ${
+            className={`text-[11px] py-1 px-2 rounded border transition-colors ${
               marcador.senshu === 'rojo'
-                ? 'bg-rose-900/60 border-rose-700 text-rose-200'
-                : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                ? 'bg-yellow-950/40 border-yellow-700/40 text-yellow-500'
+                : 'bg-zinc-900 border-zinc-800 text-zinc-700 hover:text-zinc-500'
             }`}
           >
-            SENSHU {marcador.senshu === 'rojo' ? '★' : ''}
+            SENSHU
           </button>
         </div>
       </div>
