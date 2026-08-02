@@ -152,31 +152,40 @@ export default function MesaTVPage() {
     )
   }
 
-  function PenalizacionesBadge({ chui, hc }) {
-    if (!chui && !hc) return null
-    if (hc) {
-      return (
-        <div className="flex items-center gap-2 bg-orange-900/60 border-2 border-orange-500 px-4 py-2 rounded-xl">
-          <span className="text-orange-300 text-xl font-black">⚠</span>
-          <span className="text-orange-200 text-lg font-black tracking-wide">HANSOKU CHUI</span>
-        </div>
-      )
-    }
-    const CHUI_COLOR = ['', 'bg-yellow-900/50 border-yellow-600 text-yellow-300', 'bg-amber-900/60 border-amber-500 text-amber-200', 'bg-orange-900/60 border-orange-500 text-orange-200']
+  function C1C2Badge({ c1, c2 }) {
+    const NIVEL_LABEL = ['', 'W', 'K', 'HC', 'H']
+    const NIVEL_CLASS = [
+      '',
+      'bg-yellow-900/50 border-yellow-600 text-yellow-300',
+      'bg-amber-900/60 border-amber-500 text-amber-200',
+      'bg-orange-900/60 border-orange-500 text-orange-200',
+      'bg-red-900/70 border-red-500 text-red-200',
+    ]
+    if (!c1 && !c2) return null
     return (
-      <div className={`flex items-center gap-2 border-2 px-4 py-2 rounded-xl ${CHUI_COLOR[chui] || CHUI_COLOR[1]}`}>
-        <span className="text-xl font-black">!</span>
-        <span className="text-lg font-black tracking-wide">CHUI {chui}/3</span>
+      <div className="flex gap-2">
+        {c1 > 0 && (
+          <div className={`flex items-center gap-1.5 border-2 px-3 py-1.5 rounded-xl ${NIVEL_CLASS[c1]}`}>
+            <span className="text-base font-black">C1</span>
+            <span className="text-base font-black">{NIVEL_LABEL[c1]}</span>
+          </div>
+        )}
+        {c2 > 0 && (
+          <div className={`flex items-center gap-1.5 border-2 px-3 py-1.5 rounded-xl ${NIVEL_CLASS[c2]}`}>
+            <span className="text-base font-black">C2</span>
+            <span className="text-base font-black">{NIVEL_LABEL[c2]}</span>
+          </div>
+        )}
       </div>
     )
   }
 
   const puntosRojo = combate.puntos_rojo ?? 0
   const puntosAzul = combate.puntos_azul ?? 0
-  const chiuRojo   = combate.chui_rojo ?? 0
-  const chiuAzul   = combate.chui_azul ?? 0
-  const hcRojo     = combate.hansoku_chui_rojo
-  const hcAzul     = combate.hansoku_chui_azul
+  const c1Rojo     = combate.c1_rojo ?? 0
+  const c2Rojo     = combate.c2_rojo ?? 0
+  const c1Azul     = combate.c1_azul ?? 0
+  const c2Azul     = combate.c2_azul ?? 0
   const senshu     = combate.senshu
 
   const nombreRonda = (() => {
@@ -233,7 +242,7 @@ export default function MesaTVPage() {
             </div>
           )}
 
-          <PenalizacionesBadge chui={chiuRojo} hc={hcRojo} />
+          <C1C2Badge c1={c1Rojo} c2={c2Rojo} />
         </div>
 
         {/* AO (azul) */}
@@ -265,7 +274,7 @@ export default function MesaTVPage() {
             </div>
           )}
 
-          <PenalizacionesBadge chui={chiuAzul} hc={hcAzul} />
+          <C1C2Badge c1={c1Azul} c2={c2Azul} />
         </div>
       </div>
 
