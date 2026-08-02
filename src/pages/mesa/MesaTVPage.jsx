@@ -152,30 +152,36 @@ export default function MesaTVPage() {
     )
   }
 
+  const PENAL_BOXES = [
+    { n: 1, label: 'W',  lleno: 'bg-yellow-500 border-yellow-400 text-zinc-900' },
+    { n: 2, label: 'K',  lleno: 'bg-amber-500  border-amber-400  text-zinc-900' },
+    { n: 3, label: 'HC', lleno: 'bg-orange-500 border-orange-400 text-white'    },
+    { n: 4, label: 'H',  lleno: 'bg-red-600    border-red-500    text-white'    },
+  ]
   function C1C2Badge({ c1, c2 }) {
-    const NIVEL_LABEL = ['', 'W', 'K', 'HC', 'H']
-    const NIVEL_CLASS = [
-      '',
-      'bg-yellow-900/50 border-yellow-600 text-yellow-300',
-      'bg-amber-900/60 border-amber-500 text-amber-200',
-      'bg-orange-900/60 border-orange-500 text-orange-200',
-      'bg-red-900/70 border-red-500 text-red-200',
-    ]
-    if (!c1 && !c2) return null
+    function Fila({ label, nivel }) {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-zinc-500 text-sm font-bold w-7 shrink-0">{label}</span>
+          <div className="flex gap-1.5">
+            {PENAL_BOXES.map(({ n, label: l, lleno }) => (
+              <div
+                key={n}
+                className={`w-9 h-9 rounded-lg border-2 flex items-center justify-center text-xs font-black ${
+                  nivel >= n ? lleno : 'bg-transparent border-zinc-700 text-zinc-700'
+                }`}
+              >
+                {l}
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
     return (
-      <div className="flex gap-2">
-        {c1 > 0 && (
-          <div className={`flex items-center gap-1.5 border-2 px-3 py-1.5 rounded-xl ${NIVEL_CLASS[c1]}`}>
-            <span className="text-base font-black">C1</span>
-            <span className="text-base font-black">{NIVEL_LABEL[c1]}</span>
-          </div>
-        )}
-        {c2 > 0 && (
-          <div className={`flex items-center gap-1.5 border-2 px-3 py-1.5 rounded-xl ${NIVEL_CLASS[c2]}`}>
-            <span className="text-base font-black">C2</span>
-            <span className="text-base font-black">{NIVEL_LABEL[c2]}</span>
-          </div>
-        )}
+      <div className="space-y-1.5">
+        <Fila label="C1" nivel={c1} />
+        <Fila label="C2" nivel={c2} />
       </div>
     )
   }
