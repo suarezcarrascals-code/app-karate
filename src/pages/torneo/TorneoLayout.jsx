@@ -1,9 +1,21 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom'
-import { ArrowLeft, SquaresFour, Buildings, UsersThree, Tag, LinkSimple, SignOut, ShieldCheck } from '@phosphor-icons/react'
+import { ArrowLeft, SquaresFour, Buildings, UsersThree, Tag, LinkSimple, SignOut, ShieldCheck, ArrowRight } from '@phosphor-icons/react'
 import useAuthStore from '../../stores/useAuthStore'
-import { fetchTorneoById } from '../../lib/torneos'
+import { fetchTorneoById, cambiarEstadoTorneo } from '../../lib/torneos'
 import EstadoBadge from '../../components/torneos/EstadoBadge'
+
+const ESTADO_SIGUIENTE = {
+  borrador: 'inscripciones',
+  inscripciones: 'en_curso',
+  en_curso: 'finalizado',
+}
+
+const ESTADO_LABEL_SIGUIENTE = {
+  borrador: 'Abrir inscripciones',
+  inscripciones: 'Iniciar torneo',
+  en_curso: 'Finalizar torneo',
+}
 
 const NAV_ITEMS = [
   { label: 'Tatamis',      key: 'tatamis',      icon: SquaresFour,  exact: true,  primary: true },
@@ -18,7 +30,21 @@ export default function TorneoLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [torneo, setTorneo] = useState(null)
+  const [avanzando, setAvanzando] = useState(false)
   const { profile, signOut } = useAuthStore()
+
+  async function handleAvanzarEstado() {
+    if (!torneo) return
+    const siguiente = ESTADO_SIGUIENTE[torneo.estado]
+    if (!siguiente) return
+    setAvanzando(true)
+    try {
+      const actualizado = await cambiarEstadoTorneo(id, siguiente)
+      setTorneo(actualizado)
+    } finally {
+      setAvanzando(false)
+    }
+  }
 
   async function handleSignOut() {
     await signOut()
@@ -86,8 +112,18 @@ export default function TorneoLayout() {
             </div>
           </div>
           {torneo?.estado && (
-            <div className="mt-3">
+            <div className="mt-3 space-y-2">
               <EstadoBadge estado={torneo.estado} />
+              {ESTADO_SIGUIENTE[torneo.estado] && (
+                <button
+                  onClick={handleAvanzarEstado}
+                  disabled={avanzando}
+                  className="w-full flex items-center justify-center gap-1.5 text-xs py-1.5 px-3 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-colors disabled:opacity-50"
+                >
+                  <ArrowRight size={11} />
+                  {avanzando ? '...' : ESTADO_LABEL_SIGUIENTE[torneo.estado]}
+                </button>
+              )}
             </div>
           )}
         </div>
