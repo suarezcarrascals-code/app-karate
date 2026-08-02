@@ -122,10 +122,11 @@ export default function MesaKumitePage() {
   const puntuar = useCallback((lado, tipo) => {
     setHistorial((h) => [...h, { ...marcador }])
     const pts = tipo === 'yuko' ? 1 : tipo === 'waza_ari' ? 2 : 3
+    const tipoKey = tipo === 'waza_ari' ? 'wazaAri' : tipo
     setMarcador((prev) => {
       const next = lado === 'rojo'
-        ? { ...prev, puntosRojo: prev.puntosRojo + pts, [`${tipo}Rojo`]: prev[`${tipo}Rojo`] + 1 }
-        : { ...prev, puntosAzul: prev.puntosAzul + pts, [`${tipo}Azul`]: prev[`${tipo}Azul`] + 1 }
+        ? { ...prev, puntosRojo: prev.puntosRojo + pts, [`${tipoKey}Rojo`]: (prev[`${tipoKey}Rojo`] || 0) + 1 }
+        : { ...prev, puntosAzul: prev.puntosAzul + pts, [`${tipoKey}Azul`]: (prev[`${tipoKey}Azul`] || 0) + 1 }
       const diff = Math.abs(next.puntosRojo - next.puntosAzul)
       if (diff >= 8) {
         const ganador = next.puntosRojo > next.puntosAzul ? 'rojo' : 'azul'
@@ -339,10 +340,10 @@ export default function MesaKumitePage() {
             </button>
           </div>
 
-          <div className="text-[11px] text-zinc-600 text-center space-x-2">
-            {marcador.yukoRojo > 0 && <span>Y:{marcador.yukoRojo}</span>}
-            {marcador.wazaAriRojo > 0 && <span>WA:{marcador.wazaAriRojo}</span>}
-            {marcador.ipponRojo > 0 && <span>IP:{marcador.ipponRojo}</span>}
+          <div className="text-[11px] text-zinc-600 text-center space-x-3">
+            {marcador.yukoRojo > 0 && <span>YUKO ×{marcador.yukoRojo}</span>}
+            {marcador.wazaAriRojo > 0 && <span>WA ×{marcador.wazaAriRojo}</span>}
+            {marcador.ipponRojo > 0 && <span>IPPON ×{marcador.ipponRojo}</span>}
           </div>
 
           <PenalRow lado="rojo" />
@@ -391,10 +392,10 @@ export default function MesaKumitePage() {
             </button>
           </div>
 
-          <div className="text-[11px] text-zinc-600 text-center space-x-2">
-            {marcador.yukoAzul > 0 && <span>Y:{marcador.yukoAzul}</span>}
-            {marcador.wazaAriAzul > 0 && <span>WA:{marcador.wazaAriAzul}</span>}
-            {marcador.ipponAzul > 0 && <span>IP:{marcador.ipponAzul}</span>}
+          <div className="text-[11px] text-zinc-600 text-center space-x-3">
+            {marcador.yukoAzul > 0 && <span>YUKO ×{marcador.yukoAzul}</span>}
+            {marcador.wazaAriAzul > 0 && <span>WA ×{marcador.wazaAriAzul}</span>}
+            {marcador.ipponAzul > 0 && <span>IPPON ×{marcador.ipponAzul}</span>}
           </div>
 
           <PenalRow lado="azul" />
