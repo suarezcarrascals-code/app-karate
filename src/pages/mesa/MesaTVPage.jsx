@@ -211,42 +211,10 @@ export default function MesaTVPage() {
         </div>
       </div>
 
-      {/* Marcador principal */}
+      {/* Marcador principal — AO (azul) izquierda · AKA (rojo) derecha */}
       <div className="flex-1 flex">
-        {/* AKA (rojo) */}
-        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-rose-950/60 to-black px-8 py-10 gap-4 border-r border-zinc-900">
-          <div className="w-4 h-4 rounded-full bg-rose-500" />
-          <div className="text-5xl font-black text-white text-center leading-tight">
-            {rojoNombre?.nombre ?? '—'}
-            <br />
-            <span className="text-3xl font-bold">{rojoNombre?.apellido ?? ''}</span>
-          </div>
-          <p className="text-zinc-500 text-sm">{rojoNombre?.dojo?.nombre ?? ''}</p>
-
-          <div className={`text-[10rem] font-black tabular-nums leading-none mt-4 ${
-            puntosRojo > puntosAzul ? 'text-rose-400' : 'text-zinc-200'
-          }`}>
-            {puntosRojo}
-          </div>
-
-          <div className="flex gap-4 text-3xl font-bold">
-            {(combate.yuko_rojo ?? 0) > 0 && <span className="text-rose-300">YUKO ×{combate.yuko_rojo}</span>}
-            {(combate.waza_ari_rojo ?? 0) > 0 && <span className="text-rose-200">WA ×{combate.waza_ari_rojo}</span>}
-            {(combate.ippon_rojo ?? 0) > 0 && <span className="text-white">IPPON ×{combate.ippon_rojo}</span>}
-          </div>
-
-          {senshu === 'rojo' && (
-            <div className="flex items-center gap-2 bg-yellow-500/20 border-2 border-yellow-400 px-5 py-2 rounded-xl">
-              <span className="text-yellow-300 text-2xl">★</span>
-              <span className="text-yellow-300 text-xl font-black tracking-widest">SENSHU</span>
-            </div>
-          )}
-
-          <C1C2Badge c1={c1Rojo} c2={c2Rojo} />
-        </div>
-
-        {/* AO (azul) */}
-        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-bl from-sky-950/60 to-black px-8 py-10 gap-4">
+        {/* AO (azul) — izquierda */}
+        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-sky-950/60 to-black px-8 py-10 gap-4 border-r border-zinc-900">
           <div className="w-4 h-4 rounded-full bg-sky-500" />
           <div className="text-5xl font-black text-white text-center leading-tight">
             {azulNombre?.nombre ?? '—'}
@@ -275,6 +243,38 @@ export default function MesaTVPage() {
           )}
 
           <C1C2Badge c1={c1Azul} c2={c2Azul} />
+        </div>
+
+        {/* AKA (rojo) — derecha */}
+        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-bl from-rose-950/60 to-black px-8 py-10 gap-4">
+          <div className="w-4 h-4 rounded-full bg-rose-500" />
+          <div className="text-5xl font-black text-white text-center leading-tight">
+            {rojoNombre?.nombre ?? '—'}
+            <br />
+            <span className="text-3xl font-bold">{rojoNombre?.apellido ?? ''}</span>
+          </div>
+          <p className="text-zinc-500 text-sm">{rojoNombre?.dojo?.nombre ?? ''}</p>
+
+          <div className={`text-[10rem] font-black tabular-nums leading-none mt-4 ${
+            puntosRojo > puntosAzul ? 'text-rose-400' : 'text-zinc-200'
+          }`}>
+            {puntosRojo}
+          </div>
+
+          <div className="flex gap-4 text-3xl font-bold">
+            {(combate.yuko_rojo ?? 0) > 0 && <span className="text-rose-300">YUKO ×{combate.yuko_rojo}</span>}
+            {(combate.waza_ari_rojo ?? 0) > 0 && <span className="text-rose-200">WA ×{combate.waza_ari_rojo}</span>}
+            {(combate.ippon_rojo ?? 0) > 0 && <span className="text-white">IPPON ×{combate.ippon_rojo}</span>}
+          </div>
+
+          {senshu === 'rojo' && (
+            <div className="flex items-center gap-2 bg-yellow-500/20 border-2 border-yellow-400 px-5 py-2 rounded-xl">
+              <span className="text-yellow-300 text-2xl">★</span>
+              <span className="text-yellow-300 text-xl font-black tracking-widest">SENSHU</span>
+            </div>
+          )}
+
+          <C1C2Badge c1={c1Rojo} c2={c2Rojo} />
         </div>
       </div>
 

@@ -156,22 +156,30 @@ export default function MesaKumitePage() {
     return () => clearInterval(id)
   }, [timerActivo])
 
-  // Sync al DB (debounced 800ms)
+  // Sync al DB (debounced 800ms) — resiliente: si c1/c2 no existen aún, sincroniza igual sin ellos
   useEffect(() => {
     if (!combate) return
     if (syncRef.current) clearTimeout(syncRef.current)
-    syncRef.current = setTimeout(() => {
-      sincronizarMarcador(combate.id, {
+    syncRef.current = setTimeout(async () => {
+      const base = {
         puntos_rojo: marcador.puntosRojo,
         puntos_azul: marcador.puntosAzul,
         yuko_rojo: marcador.yukoRojo, waza_ari_rojo: marcador.wazaAriRojo, ippon_rojo: marcador.ipponRojo,
         yuko_azul: marcador.yukoAzul, waza_ari_azul: marcador.wazaAriAzul, ippon_azul: marcador.ipponAzul,
+        senshu: marcador.senshu,
+        estado: 'en_curso',
+      }
+      const { error } = await supabase.from('combate').update({
+        ...base,
         c1_rojo: marcador.c1Rojo, c2_rojo: marcador.c2Rojo,
         c1_azul: marcador.c1Azul, c2_azul: marcador.c2Azul,
-        senshu: marcador.senshu,
-      }).catch(() => {})
+      }).eq('id', combate.id)
+      if (error) {
+        // Fallback: columnas c1/c2 no existen todavía — sincroniza al menos los scores
+        await supabase.from('combate').update(base).eq('id', combate.id).catch(() => {})
+      }
     }, 800)
-    return () => clearTimeout(syncRef.current)
+    return () => { if (syncRef.current) clearTimeout(syncRef.current) }
   }, [marcador, combate])
 
   // ── Puntuación ──────────────────────────────────────────────────────────────
