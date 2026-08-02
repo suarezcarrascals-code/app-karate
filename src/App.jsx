@@ -19,6 +19,8 @@ import MarcadorPublico from './pages/MarcadorPublico'
 import MesaTatamiPage from './pages/mesa/MesaTatamiPage'
 import MesaBracketPage from './pages/mesa/MesaBracketPage'
 import MesaKumitePage from './pages/mesa/MesaKumitePage'
+import MesaKataPage from './pages/mesa/MesaKataPage'
+import MesaKataTVPage from './pages/mesa/MesaKataTVPage'
 import MesaTVPage from './pages/mesa/MesaTVPage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
@@ -85,6 +87,8 @@ export default function App() {
         <Route path="/mesa/:token/categoria/:catId/combate/:combateId" element={<MesaKumitePage />} />
         <Route path="/mesa/:token/categoria/:catId/combate/:combateId/tv" element={<MesaTVPage />} />
         <Route path="/mesa/:token/categoria/:catId/tv" element={<MesaTVPage />} />
+        <Route path="/mesa/:token/categoria/:catId/combate/:combateId/kata" element={<MesaKataPage />} />
+        <Route path="/mesa/:token/categoria/:catId/combate/:combateId/kata-tv" element={<MesaKataTVPage />} />
       </Routes>
     </BrowserRouter>
   )

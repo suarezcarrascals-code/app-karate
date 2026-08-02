@@ -87,6 +87,9 @@ export default function MesaBracketPage() {
     }
   }
 
+  const esKata = ['kata_individual', 'kata_equipo'].includes(categoria?.modalidad)
+  const combateEnCurso = combates.find((c) => c.estado === 'en_curso')
+
   function CombateRow({ combate, esTercero = false }) {
     const rojo = comps[combate.competidor_rojo_id]
     const azul = comps[combate.competidor_azul_id]
@@ -94,6 +97,10 @@ export default function MesaBracketPage() {
     const puedeOperar = combate.estado === 'pendiente' || combate.estado === 'en_curso'
     const ambosDefinidos = combate.competidor_rojo_id && combate.competidor_azul_id
     const esEnCurso = combate.estado === 'en_curso'
+
+    const rutaOperar = esKata
+      ? `/mesa/${token}/categoria/${catId}/combate/${combate.id}/kata`
+      : `/mesa/${token}/categoria/${catId}/combate/${combate.id}`
 
     return (
       <div className={`rounded-xl border p-3.5 transition-colors ${ESTADO_STYLE[combate.estado] || ESTADO_STYLE.pendiente}`}>
@@ -125,7 +132,7 @@ export default function MesaBracketPage() {
             )}
             {puedeOperar && ambosDefinidos && (
               <button
-                onClick={() => navigate(`/mesa/${token}/categoria/${catId}/combate/${combate.id}`)}
+                onClick={() => navigate(rutaOperar)}
                 className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg transition-colors ${
                   esEnCurso
                     ? 'bg-amber-700 hover:bg-amber-600 text-white'
@@ -166,7 +173,12 @@ export default function MesaBracketPage() {
         </button>
         <p className="text-sm font-semibold text-zinc-200 truncate max-w-[200px]">{categoria?.nombre}</p>
         <button
-          onClick={() => window.open(`/mesa/${token}/categoria/${catId}/tv`, '_blank')}
+          onClick={() => {
+            const rutaTV = esKata && combateEnCurso
+              ? `/mesa/${token}/categoria/${catId}/combate/${combateEnCurso.id}/kata-tv`
+              : `/mesa/${token}/categoria/${catId}/tv`
+            window.open(rutaTV, '_blank')
+          }}
           className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 rounded-lg transition-colors"
         >
           <TelevisionSimple size={13} />
