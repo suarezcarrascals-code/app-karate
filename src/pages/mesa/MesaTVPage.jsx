@@ -5,9 +5,17 @@ import { fetchLinkMesaByToken } from '../../lib/linksMesa'
 import { fetchCategorias } from '../../lib/categorias'
 
 function fmtTime(seg) {
-  const m = Math.floor(Math.max(0, seg) / 60)
-  const s = Math.max(0, seg) % 60
+  const total = Math.max(0, Math.round(seg))
+  const m = Math.floor(total / 60)
+  const s = total % 60
   return `${m}:${String(s).padStart(2, '0')}`
+}
+
+function calcularSegRestantes(combate) {
+  const base = combate.timer_seg_restantes ?? 180
+  if (!combate.timer_activo || !combate.timer_inicio_ts) return base
+  const elapsed = (Date.now() - new Date(combate.timer_inicio_ts).getTime()) / 1000
+  return Math.max(0, base - elapsed)
 }
 
 export default function MesaTVPage() {
@@ -20,7 +28,8 @@ export default function MesaTVPage() {
   const [azulNombre, setAzulNombre] = useState(null)
   const [loading, setLoading] = useState(true)
   const [online, setOnline] = useState(navigator.onLine)
-  const [lastUpdate, setLastUpdate] = useState(null)
+  const [timerSeg, setTimerSeg] = useState(180)
+  const timerRef = useRef(null)
 
   // Cache de IDs para evitar re-fetch de nombres innecesario
   const compsCacheRef = useRef({})
@@ -87,7 +96,21 @@ export default function MesaTVPage() {
       if (!activo) return
       if (data) {
         setCombate(data)
-        setLastUpdate(Date.now())
+
+        // Sincronizar timer: recalcular desde timestamp del servidor
+        const seg = calcularSegRestantes(data)
+        setTimerSeg(seg)
+
+        // Arrancar/detener countdown local según estado del timer
+        if (timerRef.current) clearInterval(timerRef.current)
+        if (data.timer_activo && data.timer_inicio_ts && seg > 0) {
+          const startedAt = Date.now()
+          const startSeg = seg
+          timerRef.current = setInterval(() => {
+            const elapsed = (Date.now() - startedAt) / 1000
+            setTimerSeg(Math.max(0, startSeg - elapsed))
+          }, 100)
+        }
 
         const [rojoData, azulData] = await Promise.all([
           resolverNombre(data.competidor_rojo_id),
@@ -101,7 +124,11 @@ export default function MesaTVPage() {
 
     poll()
     const id = setInterval(poll, 500)
-    return () => { activo = false; clearInterval(id) }
+    return () => {
+      activo = false
+      clearInterval(id)
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
   }, [catId, combateId])
 
   if (loading) {
@@ -225,6 +252,26 @@ export default function MesaTVPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Cronómetro */}
+      <div className={`border-t border-zinc-900 flex flex-col items-center justify-center py-6 gap-2 ${
+        timerSeg <= 15 && timerSeg > 0 ? 'bg-amber-950/20' : ''
+      }`}>
+        <div className={`text-8xl font-black tabular-nums tracking-tight leading-none ${
+          timerSeg <= 15 && timerSeg > 0
+            ? 'text-amber-400'
+            : timerSeg === 0
+            ? 'text-red-500'
+            : 'text-zinc-100'
+        }`}>
+          {fmtTime(timerSeg)}
+        </div>
+        {timerSeg <= 15 && timerSeg > 0 && (
+          <p className="text-amber-400 font-bold tracking-widest text-sm uppercase animate-pulse">
+            ATO SHIBARAKU
+          </p>
+        )}
       </div>
 
       {/* Footer con marcador de puntos por tipo */}

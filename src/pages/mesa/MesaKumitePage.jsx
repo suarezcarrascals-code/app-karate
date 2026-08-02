@@ -428,7 +428,17 @@ export default function MesaKumitePage() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setTimerActivo((v) => !v)}
+            onClick={() => {
+              const nextActivo = !timerActivo
+              setTimerActivo(nextActivo)
+              if (combate) {
+                supabase.from('combate').update({
+                  timer_activo: nextActivo,
+                  timer_seg_restantes: timerSeg,
+                  timer_inicio_ts: nextActivo ? new Date().toISOString() : null,
+                }).eq('id', combate.id).then(() => {})
+              }
+            }}
             className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-colors ${
               timerActivo
                 ? 'bg-amber-700 hover:bg-amber-600 text-white'
@@ -438,7 +448,18 @@ export default function MesaKumitePage() {
             {timerActivo ? 'YAME' : 'HAJIME'}
           </button>
           <button
-            onClick={() => { setTimerSeg(duracion); setTimerActivo(false); setAtoShibaraku(false) }}
+            onClick={() => {
+              setTimerSeg(duracion)
+              setTimerActivo(false)
+              setAtoShibaraku(false)
+              if (combate) {
+                supabase.from('combate').update({
+                  timer_activo: false,
+                  timer_seg_restantes: duracion,
+                  timer_inicio_ts: null,
+                }).eq('id', combate.id).then(() => {})
+              }
+            }}
             className="px-4 py-2.5 rounded-xl text-sm text-zinc-500 hover:text-zinc-300 bg-zinc-900 border border-zinc-800 transition-colors"
           >
             Reiniciar
