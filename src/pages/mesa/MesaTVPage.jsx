@@ -100,7 +100,7 @@ export default function MesaTVPage() {
     }
 
     poll()
-    const id = setInterval(poll, 1500)
+    const id = setInterval(poll, 500)
     return () => { activo = false; clearInterval(id) }
   }, [catId, combateId])
 
