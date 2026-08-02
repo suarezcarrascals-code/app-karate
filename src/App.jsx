@@ -83,6 +83,7 @@ export default function App() {
         <Route path="/mesa/:token" element={<MesaTatamiPage />} />
         <Route path="/mesa/:token/categoria/:catId" element={<MesaBracketPage />} />
         <Route path="/mesa/:token/categoria/:catId/combate/:combateId" element={<MesaKumitePage />} />
+        <Route path="/mesa/:token/categoria/:catId/combate/:combateId/tv" element={<MesaTVPage />} />
         <Route path="/mesa/:token/categoria/:catId/tv" element={<MesaTVPage />} />
       </Routes>
     </BrowserRouter>

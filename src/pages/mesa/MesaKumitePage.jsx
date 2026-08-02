@@ -297,7 +297,7 @@ export default function MesaKumitePage() {
           <p className="text-[11px] text-zinc-600">{nombreRonda}</p>
         </div>
         <button
-          onClick={() => window.open(`/mesa/${token}/categoria/${catId}/tv`, '_blank')}
+          onClick={() => window.open(`/mesa/${token}/categoria/${catId}/combate/${combate?.id}/tv`, '_blank')}
           className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 rounded-lg transition-colors"
         >
           <TelevisionSimple size={13} />
