@@ -220,6 +220,12 @@ export default function MesaTVPage() {
             {puntosRojo}
           </div>
 
+          <div className="flex gap-4 text-3xl font-bold">
+            {(combate.yuko_rojo ?? 0) > 0 && <span className="text-rose-300">YUKO ×{combate.yuko_rojo}</span>}
+            {(combate.waza_ari_rojo ?? 0) > 0 && <span className="text-rose-200">WA ×{combate.waza_ari_rojo}</span>}
+            {(combate.ippon_rojo ?? 0) > 0 && <span className="text-white">IPPON ×{combate.ippon_rojo}</span>}
+          </div>
+
           {senshu === 'rojo' && (
             <div className="flex items-center gap-2 bg-yellow-500/20 border-2 border-yellow-400 px-5 py-2 rounded-xl">
               <span className="text-yellow-300 text-2xl">★</span>
@@ -244,6 +250,12 @@ export default function MesaTVPage() {
             puntosAzul > puntosRojo ? 'text-sky-400' : 'text-zinc-200'
           }`}>
             {puntosAzul}
+          </div>
+
+          <div className="flex gap-4 text-3xl font-bold">
+            {(combate.yuko_azul ?? 0) > 0 && <span className="text-sky-300">YUKO ×{combate.yuko_azul}</span>}
+            {(combate.waza_ari_azul ?? 0) > 0 && <span className="text-sky-200">WA ×{combate.waza_ari_azul}</span>}
+            {(combate.ippon_azul ?? 0) > 0 && <span className="text-white">IPPON ×{combate.ippon_azul}</span>}
           </div>
 
           {senshu === 'azul' && (
@@ -280,19 +292,6 @@ export default function MesaTVPage() {
         )}
       </div>
 
-      {/* Footer con marcador de puntos por tipo */}
-      <div className="border-t border-zinc-900 px-8 py-5 flex justify-between text-2xl font-bold">
-        <div className="flex gap-6">
-          {(combate.yuko_rojo ?? 0) > 0 && <span className="text-rose-400">YUKO ×{combate.yuko_rojo}</span>}
-          {(combate.waza_ari_rojo ?? 0) > 0 && <span className="text-rose-300">WA ×{combate.waza_ari_rojo}</span>}
-          {(combate.ippon_rojo ?? 0) > 0 && <span className="text-rose-200">IPPON ×{combate.ippon_rojo}</span>}
-        </div>
-        <div className="flex gap-6">
-          {(combate.ippon_azul ?? 0) > 0 && <span className="text-sky-200">IPPON ×{combate.ippon_azul}</span>}
-          {(combate.waza_ari_azul ?? 0) > 0 && <span className="text-sky-300">WA ×{combate.waza_ari_azul}</span>}
-          {(combate.yuko_azul ?? 0) > 0 && <span className="text-sky-400">YUKO ×{combate.yuko_azul}</span>}
-        </div>
-      </div>
     </div>
   )
 }
