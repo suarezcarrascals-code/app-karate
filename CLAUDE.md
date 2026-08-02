@@ -1035,5 +1035,5 @@ Repositorio: `https://github.com/suarezcarrascals-code/app-karate`
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at [specs/007-links-mesa-tecnica/plan.md](specs/007-links-mesa-tecnica/plan.md)
+at [specs/008-marcador-kata-individual/plan.md](specs/008-marcador-kata-individual/plan.md)
 <!-- SPECKIT END -->
