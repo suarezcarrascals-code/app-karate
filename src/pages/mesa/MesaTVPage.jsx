@@ -218,8 +218,11 @@ export default function MesaTVPage() {
       {/* Marcador principal — AO (azul) izquierda · AKA (rojo) derecha */}
       <div className="flex-1 flex">
         {/* AO (azul) — izquierda */}
-        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-sky-950/60 to-black px-8 py-10 gap-4 border-r border-zinc-900">
-          <div className="w-4 h-4 rounded-full bg-sky-500" />
+        <div className="flex-1 flex flex-col bg-gradient-to-b from-sky-950/70 to-black border-r border-zinc-900">
+          <div className="bg-sky-600 py-3 flex items-center justify-center shrink-0">
+            <span className="text-white text-3xl font-black tracking-[0.2em]">AO</span>
+          </div>
+          <div className="flex-1 flex flex-col items-center justify-center px-8 py-6 gap-4">
           <div className="text-5xl font-black text-white text-center leading-tight">
             {azulNombre?.nombre ?? '—'}
             <br />
@@ -248,11 +251,15 @@ export default function MesaTVPage() {
           </div>
 
           <AmonBadge amon={amonAzul} shikkaku={shikkakuAzul} />
+          </div>
         </div>
 
         {/* AKA (rojo) — derecha */}
-        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-bl from-rose-950/60 to-black px-8 py-10 gap-4">
-          <div className="w-4 h-4 rounded-full bg-rose-500" />
+        <div className="flex-1 flex flex-col bg-gradient-to-b from-rose-950/70 to-black">
+          <div className="bg-rose-700 py-3 flex items-center justify-center shrink-0">
+            <span className="text-white text-3xl font-black tracking-[0.2em]">AKA</span>
+          </div>
+          <div className="flex-1 flex flex-col items-center justify-center px-8 py-6 gap-4">
           <div className="text-5xl font-black text-white text-center leading-tight">
             {rojoNombre?.nombre ?? '—'}
             <br />
@@ -281,6 +288,7 @@ export default function MesaTVPage() {
           </div>
 
           <AmonBadge amon={amonRojo} shikkaku={shikkakuRojo} />
+          </div>
         </div>
       </div>
 
