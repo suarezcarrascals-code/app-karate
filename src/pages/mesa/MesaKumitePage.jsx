@@ -213,23 +213,8 @@ export default function MesaKumitePage() {
 
     if (nivel <= prevNivel) { setConfirmPenalizacion(null); return }
 
-    // K (nivel 2) alcanzado por primera vez → rival recibe +1 (YUKO)
-    const darYukoARival = prevNivel < 2 && nivel >= 2
-
     setHistorial((h) => [...h, { ...marcador }])
-    setMarcador((prev) => {
-      const next = { ...prev, [clave]: nivel }
-      if (darYukoARival) {
-        if (lado === 'rojo') {
-          next.puntosAzul = prev.puntosAzul + 1
-          next.yukoAzul = (prev.yukoAzul || 0) + 1
-        } else {
-          next.puntosRojo = prev.puntosRojo + 1
-          next.yukoRojo = (prev.yukoRojo || 0) + 1
-        }
-      }
-      return next
-    })
+    setMarcador((prev) => ({ ...prev, [clave]: nivel }))
 
     // H (nivel 4) → rival gana el bout
     if (nivel >= 4) {
@@ -542,11 +527,9 @@ export default function MesaKumitePage() {
         const { lado, fila, nivel } = confirmPenalizacion
         const sufijo = lado === 'rojo' ? 'Rojo' : 'Azul'
         const clave = `${fila}${sufijo}`
-        const prevNivel = marcador[clave]
         const nombre = lado === 'rojo'
           ? `${rojo?.nombre ?? ''} ${rojo?.apellido ?? ''}`.trim()
           : `${azul?.nombre ?? ''} ${azul?.apellido ?? ''}`.trim()
-        const darYuko = prevNivel < 2 && nivel >= 2
         const esHansoku = nivel >= 4
 
         return (
@@ -562,11 +545,6 @@ export default function MesaKumitePage() {
                   {nombre}
                 </span>
               </p>
-              {darYuko && (
-                <div className="text-xs bg-amber-950/40 border border-amber-800/50 text-amber-400 px-3 py-2 rounded-lg mb-3">
-                  +1 punto para el rival (K automático)
-                </div>
-              )}
               {esHansoku && (
                 <div className="text-xs bg-red-950/50 border border-red-800/50 text-red-400 px-3 py-2 rounded-lg mb-3 font-semibold">
                   HANSOKU — el rival gana el combate
