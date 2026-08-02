@@ -151,6 +151,33 @@ export async function actualizarResultado(combateId, { puntos_rojo, puntos_azul,
   return data
 }
 
+// Retorna el próximo combate pendiente con ambos slots llenos (listo para jugar)
+export async function fetchProximoCombate(categoriaId) {
+  const { data, error } = await supabase
+    .from('combate')
+    .select('*')
+    .eq('categoria_id', categoriaId)
+    .eq('estado', 'pendiente')
+    .not('competidor_rojo_id', 'is', null)
+    .not('competidor_azul_id', 'is', null)
+  if (error || !data || data.length === 0) return null
+  return data.sort((a, b) => {
+    if (a.ronda !== b.ronda) return a.ronda - b.ronda
+    const oa = a.orden_en_ronda === 0 ? 9999 : a.orden_en_ronda
+    const ob = b.orden_en_ronda === 0 ? 9999 : b.orden_en_ronda
+    return oa - ob
+  })[0]
+}
+
+// Sincroniza el estado del marcador a Supabase (para el display TV)
+export async function sincronizarMarcador(combateId, datos) {
+  const { error } = await supabase
+    .from('combate')
+    .update({ ...datos, estado: 'en_curso' })
+    .eq('id', combateId)
+  if (error) throw error
+}
+
 export async function eliminarCombatesCategoria(categoriaId) {
   const { error } = await supabase.from('combate').delete().eq('categoria_id', categoriaId)
   if (error) throw error

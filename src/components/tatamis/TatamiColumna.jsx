@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { DotsSixVertical } from '@phosphor-icons/react'
+import { DotsSixVertical, Link } from '@phosphor-icons/react'
 import { verificarCategoriasEnTatami } from '../../lib/tatamis'
+import { generarLinkMesa } from '../../lib/linksMesa'
 import useTatamiStore from '../../stores/useTatamiStore'
 
 const MODALIDAD_LABEL = {
@@ -54,16 +55,31 @@ function CategoriaItemColumna({ cat }) {
   )
 }
 
-export default function TatamiColumna({ tatami, posicion, categorias, torneoEstado }) {
+export default function TatamiColumna({ tatami, posicion, categorias, torneoEstado, torneoId }) {
   const [editando, setEditando] = useState(false)
   const [modal, setModal] = useState(null)
   const [nombre, setNombre] = useState(tatami.nombre)
   const [arbitro, setArbitro] = useState(tatami.arbitro_nombre || '')
   const [errorNombre, setErrorNombre] = useState(null)
+  const [linkCopiado, setLinkCopiado] = useState(false)
+  const [generandoLink, setGenerandoLink] = useState(false)
 
   const removeTatami = useTatamiStore((s) => s.removeTatami)
   const editTatami = useTatamiStore((s) => s.editTatami)
   const bloqueado = torneoEstado === 'en_curso' || torneoEstado === 'finalizado'
+
+  async function handleLinkMesa() {
+    setGenerandoLink(true)
+    try {
+      const linkData = await generarLinkMesa(torneoId, tatami.id)
+      const url = `${window.location.origin}/mesa/${linkData.token}`
+      await navigator.clipboard.writeText(url)
+      setLinkCopiado(true)
+      setTimeout(() => setLinkCopiado(false), 2500)
+    } catch { /* silencioso */ } finally {
+      setGenerandoLink(false)
+    }
+  }
 
   const cats = categorias
     .filter((c) => c.tatami_id === tatami.id)
@@ -129,18 +145,35 @@ export default function TatamiColumna({ tatami, posicion, categorias, torneoEsta
                 <p className="text-xs text-zinc-600 truncate">{tatami.arbitro_nombre || 'Sin árbitro'}</p>
               </div>
             </div>
-            {!bloqueado && (
-              <div className="flex items-center gap-2 shrink-0">
-                <button onClick={() => { setNombre(tatami.nombre); setArbitro(tatami.arbitro_nombre || ''); setEditando(true) }}
-                  className="text-xs text-zinc-500 hover:text-zinc-200 font-medium transition-colors">
-                  Editar
+            <div className="flex items-center gap-2 shrink-0">
+              {torneoEstado === 'en_curso' && (
+                <button
+                  onClick={handleLinkMesa}
+                  disabled={generandoLink}
+                  title="Copiar link de mesa técnica"
+                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg border font-medium transition-colors disabled:opacity-50 ${
+                    linkCopiado
+                      ? 'bg-emerald-950/50 border-emerald-800 text-emerald-400'
+                      : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600'
+                  }`}
+                >
+                  <Link size={11} />
+                  {linkCopiado ? 'Copiado' : 'Link mesa'}
                 </button>
-                <button onClick={handleEliminarClick}
-                  className="text-xs text-zinc-600 hover:text-rose-400 font-medium transition-colors">
-                  Eliminar
-                </button>
-              </div>
-            )}
+              )}
+              {!bloqueado && (
+                <>
+                  <button onClick={() => { setNombre(tatami.nombre); setArbitro(tatami.arbitro_nombre || ''); setEditando(true) }}
+                    className="text-xs text-zinc-500 hover:text-zinc-200 font-medium transition-colors">
+                    Editar
+                  </button>
+                  <button onClick={handleEliminarClick}
+                    className="text-xs text-zinc-600 hover:text-rose-400 font-medium transition-colors">
+                    Eliminar
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>

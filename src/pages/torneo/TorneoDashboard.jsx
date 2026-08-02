@@ -153,7 +153,7 @@ export default function TorneoDashboard() {
           <div className="flex flex-col md:flex-row gap-4 pb-4">
             {tatamis.map((tatami, idx) => (
               <TatamiColumna key={tatami.id} tatami={tatami} posicion={idx + 1}
-                categorias={categorias} torneoEstado={torneo?.estado} />
+                categorias={categorias} torneoEstado={torneo?.estado} torneoId={id} />
             ))}
           </div>
           <DragOverlay>

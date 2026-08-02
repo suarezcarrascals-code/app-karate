@@ -129,6 +129,17 @@ export async function asignarTatamiLote(tatamiId, items) {
   return data
 }
 
+export async function actualizarEstadoCategoria(categoriaId, estado) {
+  const { data, error } = await supabase
+    .from('categoria')
+    .update({ estado })
+    .eq('id', categoriaId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function cerrarInscripciones(categoriaId) {
   const { data, error } = await supabase
     .from('categoria')

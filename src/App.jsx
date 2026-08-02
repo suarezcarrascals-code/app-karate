@@ -16,6 +16,9 @@ import TvDisplay from './pages/torneo/marcador/TvDisplay'
 import InscripcionesPage from './pages/torneo/InscripcionesPage'
 import InscripcionPublica from './pages/InscripcionPublica'
 import MarcadorPublico from './pages/MarcadorPublico'
+import MesaTatamiPage from './pages/mesa/MesaTatamiPage'
+import MesaKumitePage from './pages/mesa/MesaKumitePage'
+import MesaTVPage from './pages/mesa/MesaTVPage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import PendingPage from './pages/auth/PendingPage'
@@ -74,6 +77,11 @@ export default function App() {
         <Route path="/torneo/:id/marcador/:combateId/tv" element={<TvDisplay />} />
         <Route path="/inscripcion/:token" element={<InscripcionPublica />} />
         <Route path="/marcador/:token" element={<MarcadorPublico />} />
+
+        {/* Mesa técnica — acceso por link, sin cuenta */}
+        <Route path="/mesa/:token" element={<MesaTatamiPage />} />
+        <Route path="/mesa/:token/categoria/:catId" element={<MesaKumitePage />} />
+        <Route path="/mesa/:token/categoria/:catId/tv" element={<MesaTVPage />} />
       </Routes>
     </BrowserRouter>
   )
