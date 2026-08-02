@@ -258,13 +258,16 @@ export default function MesaTVPage() {
       <div className={`border-t border-zinc-900 flex flex-col items-center justify-center py-6 gap-2 ${
         timerSeg <= 15 && timerSeg > 0 ? 'bg-amber-950/20' : ''
       }`}>
-        <div className={`text-8xl font-black tabular-nums tracking-tight leading-none ${
-          timerSeg <= 15 && timerSeg > 0
-            ? 'text-amber-400'
-            : timerSeg === 0
-            ? 'text-red-500'
-            : 'text-zinc-100'
-        }`}>
+        <div
+          style={{ fontSize: 'clamp(6rem, 18vw, 22rem)', lineHeight: 1 }}
+          className={`font-black tabular-nums tracking-tight ${
+            timerSeg <= 15 && timerSeg > 0
+              ? 'text-amber-400'
+              : timerSeg === 0
+              ? 'text-red-500'
+              : 'text-zinc-100'
+          }`}
+        >
           {fmtTime(timerSeg)}
         </div>
         {timerSeg <= 15 && timerSeg > 0 && (
