@@ -109,6 +109,10 @@ export default function MesaKataPage() {
   // Max ronda para label
   const [maxRonda, setMaxRonda] = useState(1)
 
+  // Número de jueces activos: 3 o 5
+  const [numJueces, setNumJueces] = useState(5)
+  const juecesActivos = JUECES.slice(0, numJueces)
+
   // Indicador online/offline
   useEffect(() => {
     const up = () => setOnline(true)
@@ -195,15 +199,25 @@ export default function MesaKataPage() {
   }, [token, catId, combateId, navigate])
 
   function inferirFase(c) {
+    // Inferir número de jueces: si j4_rojo tiene valor → 5, si j1_rojo existe pero j4 es null → 3
+    // Antes de confirmar AKA leer localStorage
+    if (c.j1_rojo !== null) {
+      setNumJueces(c.j4_rojo !== null ? 5 : 3)
+    } else {
+      const saved = localStorage.getItem(`kata_jueces_${c.id}`)
+      if (saved) setNumJueces(parseInt(saved, 10))
+    }
+
+    const nj = c.j1_rojo !== null ? (c.j4_rojo !== null ? 5 : 3) : 5
+
     if (c.estado === 'finalizado') {
       setFase('resultado')
-      // Restaurar puntajes y recalcular votos si existen
       if (c.j1_rojo !== null) {
         const sR = JUECES.reduce((acc, j) => ({ ...acc, [j]: c[`${j}_rojo`] ?? '' }), {})
         const sA = JUECES.reduce((acc, j) => ({ ...acc, [j]: c[`${j}_azul`] ?? '' }), {})
         setScoresRojo(sR)
         setScoresAzul(sA)
-        if (c.j1_azul !== null) recalcularResultado(sR, sA)
+        if (c.j1_azul !== null) recalcularResultado(sR, sA, nj)
       }
     } else if (c.j1_rojo !== null) {
       setFase('azul_performance')
@@ -216,9 +230,10 @@ export default function MesaKataPage() {
     if (c.kata_anunciado_azul) setKataAzul(c.kata_anunciado_azul)
   }
 
-  function recalcularResultado(sR, sA) {
+  function recalcularResultado(sR, sA, nj = numJueces) {
     try {
-      const vv = JUECES.map((j) =>
+      const activos = JUECES.slice(0, nj)
+      const vv = activos.map((j) =>
         calcularVotoJuez({ aka: parseFloat(sR[j]), ao: parseFloat(sA[j]) }) === 'aka' ? 'rojo' : 'azul'
       )
       const ganadorAkaAo = determinarGanadorKataBout(
@@ -277,9 +292,14 @@ export default function MesaKataPage() {
     setErrorEmpate(null)
   }
 
+  function cambiarNumJueces(n) {
+    setNumJueces(n)
+    localStorage.setItem(`kata_jueces_${combateId}`, n)
+  }
+
   // DQ (0.0) para un lado completo
   function aplicarDQ(lado) {
-    const zeros = JUECES.reduce((acc, j) => ({ ...acc, [j]: '0.0' }), {})
+    const zeros = juecesActivos.reduce((acc, j) => ({ ...acc, [j]: '0.0' }), {})
     if (lado === 'rojo') setScoresRojo(zeros)
     else setScoresAzul(zeros)
     setModalDQ(null)
@@ -287,15 +307,14 @@ export default function MesaKataPage() {
 
   // Confirmar puntajes AKA (rojo)
   async function confirmarRojo() {
-    const faltantes = JUECES.filter((j) => scoresRojo[j] === '' || scoresRojo[j] === null)
+    const faltantes = juecesActivos.filter((j) => scoresRojo[j] === '' || scoresRojo[j] === null)
     if (faltantes.length) { setErrorEmpate(`Completa los puntajes: ${faltantes.map((j) => j.toUpperCase()).join(', ')}`); return }
     setGuardando(true)
+    const rojoScores = Object.fromEntries(juecesActivos.map((j) => [`${j}_rojo`, parseFloat(scoresRojo[j])]))
     const update = {
       estado: 'en_curso',
       kata_anunciado_rojo: kataRojo.trim() || null,
-      j1_rojo: parseFloat(scoresRojo.j1), j2_rojo: parseFloat(scoresRojo.j2),
-      j3_rojo: parseFloat(scoresRojo.j3), j4_rojo: parseFloat(scoresRojo.j4),
-      j5_rojo: parseFloat(scoresRojo.j5),
+      ...rojoScores,
     }
     await supabase.from('combate').update(update).eq('id', combateId)
     setCombate((prev) => ({ ...prev, ...update }))
@@ -305,11 +324,11 @@ export default function MesaKataPage() {
 
   // Confirmar puntajes AO (azul)
   async function confirmarAzul() {
-    const faltantes = JUECES.filter((j) => scoresAzul[j] === '' || scoresAzul[j] === null)
+    const faltantes = juecesActivos.filter((j) => scoresAzul[j] === '' || scoresAzul[j] === null)
     if (faltantes.length) { setErrorEmpate(`Completa los puntajes: ${faltantes.map((j) => j.toUpperCase()).join(', ')}`); return }
 
     // Detectar empates por juez
-    const conflictos = JUECES.filter(
+    const conflictos = juecesActivos.filter(
       (j) => parseFloat(scoresRojo[j]) === parseFloat(scoresAzul[j])
     )
     if (conflictos.length) {
@@ -320,17 +339,16 @@ export default function MesaKataPage() {
     }
 
     setGuardando(true)
+    const azulScores = Object.fromEntries(juecesActivos.map((j) => [`${j}_azul`, parseFloat(scoresAzul[j])]))
     const update = {
       kata_anunciado_azul: kataAzul.trim() || null,
-      j1_azul: parseFloat(scoresAzul.j1), j2_azul: parseFloat(scoresAzul.j2),
-      j3_azul: parseFloat(scoresAzul.j3), j4_azul: parseFloat(scoresAzul.j4),
-      j5_azul: parseFloat(scoresAzul.j5),
+      ...azulScores,
     }
     await supabase.from('combate').update(update).eq('id', combateId)
     setCombate((prev) => ({ ...prev, ...update }))
 
     // Calcular votos y ganador
-    const vv = JUECES.map((j) =>
+    const vv = juecesActivos.map((j) =>
       calcularVotoJuez({ aka: parseFloat(scoresRojo[j]), ao: parseFloat(scoresAzul[j]) }) === 'aka' ? 'rojo' : 'azul'
     )
     const ganadorAkaAo = determinarGanadorKataBout(vv.map((v) => (v === 'rojo' ? 'aka' : 'ao')))
@@ -526,6 +544,24 @@ export default function MesaKataPage() {
               )}
             </div>
 
+            {/* Toggle número de jueces */}
+            <div className="flex items-center gap-3 bg-zinc-900 rounded-xl border border-zinc-800 px-4 py-3">
+              <span className="text-xs text-zinc-500 flex-1">Jueces</span>
+              {[3, 5].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => cambiarNumJueces(n)}
+                  className={`w-10 py-1.5 rounded-lg text-sm font-bold transition-colors ${
+                    numJueces === n
+                      ? 'bg-zinc-500 text-white'
+                      : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+
             <button
               onClick={() => setFase('rojo_performance')}
               className="w-full py-3 bg-rose-700 hover:bg-rose-600 text-white font-bold rounded-xl text-sm transition-colors"
@@ -544,12 +580,12 @@ export default function MesaKataPage() {
                 {kataRojo && <p className="text-xs text-zinc-500">{kataRojo}</p>}
               </div>
               <div className="flex gap-2 justify-center flex-wrap">
-                {JUECES.map((_, idx) => (
+                {juecesActivos.map((_, idx) => (
                   <ScoreInput
                     key={idx}
                     juezIdx={idx}
                     lado="rojo"
-                    valor={scoresRojo[JUECES[idx]]}
+                    valor={scoresRojo[juecesActivos[idx]]}
                     onChange={cambiarScoreRojo}
                     disabled={false}
                   />
@@ -571,7 +607,7 @@ export default function MesaKataPage() {
 
             <button
               onClick={confirmarRojo}
-              disabled={guardando || JUECES.some((j) => scoresRojo[j] === '')}
+              disabled={guardando || juecesActivos.some((j) => scoresRojo[j] === '')}
               className="w-full py-3 bg-rose-700 hover:bg-rose-600 disabled:opacity-40 text-white font-bold rounded-xl text-sm transition-colors"
             >
               {guardando ? 'Guardando...' : 'Confirmar puntajes AKA →'}
@@ -586,8 +622,8 @@ export default function MesaKataPage() {
             <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-3">
               <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-2">AKA confirmado</p>
               <div className="flex gap-2 justify-center flex-wrap">
-                {JUECES.map((_, idx) => (
-                  <ScoreLocked key={idx} juezIdx={idx} lado="rojo" valor={scoresRojo[JUECES[idx]]} />
+                {juecesActivos.map((_, idx) => (
+                  <ScoreLocked key={idx} juezIdx={idx} lado="rojo" valor={scoresRojo[juecesActivos[idx]]} />
                 ))}
               </div>
             </div>
@@ -599,12 +635,12 @@ export default function MesaKataPage() {
                 {kataAzul && <p className="text-xs text-zinc-500">{kataAzul}</p>}
               </div>
               <div className="flex gap-2 justify-center flex-wrap">
-                {JUECES.map((_, idx) => (
+                {juecesActivos.map((_, idx) => (
                   <ScoreInput
                     key={idx}
                     juezIdx={idx}
                     lado="azul"
-                    valor={scoresAzul[JUECES[idx]]}
+                    valor={scoresAzul[juecesActivos[idx]]}
                     onChange={cambiarScoreAzul}
                     disabled={false}
                   />
@@ -626,7 +662,7 @@ export default function MesaKataPage() {
 
             <button
               onClick={confirmarAzul}
-              disabled={guardando || JUECES.some((j) => scoresAzul[j] === '')}
+              disabled={guardando || juecesActivos.some((j) => scoresAzul[j] === '')}
               className="w-full py-3 bg-sky-700 hover:bg-sky-600 disabled:opacity-40 text-white font-bold rounded-xl text-sm transition-colors"
             >
               {guardando ? 'Guardando...' : 'Confirmar puntajes AO →'}
@@ -647,7 +683,7 @@ export default function MesaKataPage() {
                 <span className="text-center text-rose-400">AKA</span>
                 <span className="text-center">Voto</span>
               </div>
-              {JUECES.map((j, idx) => {
+              {juecesActivos.map((j, idx) => {
                 const voto = votos[idx]
                 return (
                   <div key={j} className="grid grid-cols-4 px-4 py-2.5 border-t border-zinc-800 items-center">

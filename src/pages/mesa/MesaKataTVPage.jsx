@@ -5,24 +5,26 @@ import { calcularVotoJuez } from '../../lib/scoring'
 
 const JUECES = ['j1', 'j2', 'j3', 'j4', 'j5']
 
+function inferirJuecesActivos(combate) {
+  if (!combate || combate.j1_rojo === null || combate.j1_rojo === undefined) return JUECES
+  return combate.j4_rojo !== null && combate.j4_rojo !== undefined ? JUECES : JUECES.slice(0, 3)
+}
+
 function calcularVotos(combate) {
   if (!combate) return []
-  const votos = []
-  for (const j of JUECES) {
+  const activos = inferirJuecesActivos(combate)
+  return activos.map((j) => {
     const rojo = combate[`${j}_rojo`]
     const azul = combate[`${j}_azul`]
     if (rojo !== null && rojo !== undefined && azul !== null && azul !== undefined) {
       try {
-        const v = calcularVotoJuez({ aka: parseFloat(rojo), ao: parseFloat(azul) })
-        votos.push(v === 'aka' ? 'rojo' : 'azul')
+        return calcularVotoJuez({ aka: parseFloat(rojo), ao: parseFloat(azul) }) === 'aka' ? 'rojo' : 'azul'
       } catch {
-        votos.push(null)
+        return null
       }
-    } else {
-      votos.push(null)
     }
-  }
-  return votos
+    return null
+  })
 }
 
 export default function MesaKataTVPage() {
@@ -135,6 +137,7 @@ export default function MesaKataTVPage() {
     return `Ronda ${combate.ronda}`
   }
 
+  const juecesActivos = inferirJuecesActivos(combate)
   const votos = calcularVotos(combate)
   const votosRojo = votos.filter((v) => v === 'rojo').length
   const votosAzul = votos.filter((v) => v === 'azul').length
@@ -190,7 +193,7 @@ export default function MesaKataTVPage() {
 
           {/* Tabla puntajes AO */}
           <div className="flex-1 flex flex-col gap-3">
-            {JUECES.map((j, idx) => {
+            {juecesActivos.map((j, idx) => {
               const score = combate ? combate[`${j}_azul`] : null
               const voto = votos[idx]
               const ganEsteJuez = voto === 'azul'
@@ -242,7 +245,7 @@ export default function MesaKataTVPage() {
 
           {/* Tabla puntajes AKA */}
           <div className="flex-1 flex flex-col gap-3">
-            {JUECES.map((j, idx) => {
+            {juecesActivos.map((j, idx) => {
               const score = combate ? combate[`${j}_rojo`] : null
               const voto = votos[idx]
               const ganEsteJuez = voto === 'rojo'
