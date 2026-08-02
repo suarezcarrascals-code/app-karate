@@ -152,6 +152,25 @@ export default function MesaTVPage() {
     )
   }
 
+  function PenalizacionesBadge({ chui, hc }) {
+    if (!chui && !hc) return null
+    if (hc) {
+      return (
+        <div className="flex items-center gap-2 bg-orange-900/60 border-2 border-orange-500 px-4 py-2 rounded-xl">
+          <span className="text-orange-300 text-xl font-black">⚠</span>
+          <span className="text-orange-200 text-lg font-black tracking-wide">HANSOKU CHUI</span>
+        </div>
+      )
+    }
+    const CHUI_COLOR = ['', 'bg-yellow-900/50 border-yellow-600 text-yellow-300', 'bg-amber-900/60 border-amber-500 text-amber-200', 'bg-orange-900/60 border-orange-500 text-orange-200']
+    return (
+      <div className={`flex items-center gap-2 border-2 px-4 py-2 rounded-xl ${CHUI_COLOR[chui] || CHUI_COLOR[1]}`}>
+        <span className="text-xl font-black">!</span>
+        <span className="text-lg font-black tracking-wide">CHUI {chui}/3</span>
+      </div>
+    )
+  }
+
   const puntosRojo = combate.puntos_rojo ?? 0
   const puntosAzul = combate.puntos_azul ?? 0
   const chiuRojo   = combate.chui_rojo ?? 0
@@ -202,21 +221,13 @@ export default function MesaTVPage() {
           </div>
 
           {senshu === 'rojo' && (
-            <div className="bg-rose-800/60 border border-rose-700 px-4 py-1.5 rounded-full text-rose-200 text-sm font-bold tracking-widest">
-              SENSHU
+            <div className="flex items-center gap-2 bg-yellow-500/20 border-2 border-yellow-400 px-5 py-2 rounded-xl">
+              <span className="text-yellow-300 text-2xl">★</span>
+              <span className="text-yellow-300 text-xl font-black tracking-widest">SENSHU</span>
             </div>
           )}
 
-          <div className="flex gap-2 mt-2">
-            {Array.from({ length: chiuRojo }).map((_, i) => (
-              <div key={i} className="w-4 h-4 rounded-full bg-amber-500" title="CHUI" />
-            ))}
-            {hcRojo && (
-              <div className="px-2 py-0.5 bg-orange-800 text-orange-200 rounded text-xs font-bold">
-                H.CHUI
-              </div>
-            )}
-          </div>
+          <PenalizacionesBadge chui={chiuRojo} hc={hcRojo} />
         </div>
 
         {/* AO (azul) */}
@@ -236,21 +247,13 @@ export default function MesaTVPage() {
           </div>
 
           {senshu === 'azul' && (
-            <div className="bg-sky-800/60 border border-sky-700 px-4 py-1.5 rounded-full text-sky-200 text-sm font-bold tracking-widest">
-              SENSHU
+            <div className="flex items-center gap-2 bg-yellow-500/20 border-2 border-yellow-400 px-5 py-2 rounded-xl">
+              <span className="text-yellow-300 text-2xl">★</span>
+              <span className="text-yellow-300 text-xl font-black tracking-widest">SENSHU</span>
             </div>
           )}
 
-          <div className="flex gap-2 mt-2">
-            {Array.from({ length: chiuAzul }).map((_, i) => (
-              <div key={i} className="w-4 h-4 rounded-full bg-amber-500" title="CHUI" />
-            ))}
-            {hcAzul && (
-              <div className="px-2 py-0.5 bg-orange-800 text-orange-200 rounded text-xs font-bold">
-                H.CHUI
-              </div>
-            )}
-          </div>
+          <PenalizacionesBadge chui={chiuAzul} hc={hcAzul} />
         </div>
       </div>
 
