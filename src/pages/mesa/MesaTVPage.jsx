@@ -259,7 +259,7 @@ export default function MesaTVPage() {
         timerSeg <= 15 && timerSeg > 0 ? 'bg-amber-950/20' : ''
       }`}>
         <div
-          style={{ fontSize: 'clamp(6rem, 18vw, 22rem)', lineHeight: 1 }}
+          style={{ fontSize: 'clamp(4rem, 10vw, 10rem)', lineHeight: 1 }}
           className={`font-black tabular-nums tracking-tight ${
             timerSeg <= 15 && timerSeg > 0
               ? 'text-amber-400'
@@ -278,16 +278,16 @@ export default function MesaTVPage() {
       </div>
 
       {/* Footer con marcador de puntos por tipo */}
-      <div className="border-t border-zinc-900 px-8 py-4 flex justify-between text-xs text-zinc-600">
-        <div className="flex gap-4">
-          {(combate.yuko_rojo ?? 0) > 0 && <span className="text-rose-700">YUKO ×{combate.yuko_rojo}</span>}
-          {(combate.waza_ari_rojo ?? 0) > 0 && <span className="text-rose-600">WA ×{combate.waza_ari_rojo}</span>}
-          {(combate.ippon_rojo ?? 0) > 0 && <span className="text-rose-500">IPPON ×{combate.ippon_rojo}</span>}
+      <div className="border-t border-zinc-900 px-8 py-5 flex justify-between text-2xl font-bold">
+        <div className="flex gap-6">
+          {(combate.yuko_rojo ?? 0) > 0 && <span className="text-rose-400">YUKO ×{combate.yuko_rojo}</span>}
+          {(combate.waza_ari_rojo ?? 0) > 0 && <span className="text-rose-300">WA ×{combate.waza_ari_rojo}</span>}
+          {(combate.ippon_rojo ?? 0) > 0 && <span className="text-rose-200">IPPON ×{combate.ippon_rojo}</span>}
         </div>
-        <div className="flex gap-4">
-          {(combate.ippon_azul ?? 0) > 0 && <span className="text-sky-500">IPPON ×{combate.ippon_azul}</span>}
-          {(combate.waza_ari_azul ?? 0) > 0 && <span className="text-sky-600">WA ×{combate.waza_ari_azul}</span>}
-          {(combate.yuko_azul ?? 0) > 0 && <span className="text-sky-700">YUKO ×{combate.yuko_azul}</span>}
+        <div className="flex gap-6">
+          {(combate.ippon_azul ?? 0) > 0 && <span className="text-sky-200">IPPON ×{combate.ippon_azul}</span>}
+          {(combate.waza_ari_azul ?? 0) > 0 && <span className="text-sky-300">WA ×{combate.waza_ari_azul}</span>}
+          {(combate.yuko_azul ?? 0) > 0 && <span className="text-sky-400">YUKO ×{combate.yuko_azul}</span>}
         </div>
       </div>
     </div>
