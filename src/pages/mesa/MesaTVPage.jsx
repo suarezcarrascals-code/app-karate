@@ -227,25 +227,25 @@ export default function MesaTVPage() {
           </div>
           <p className="text-zinc-500 text-sm">{azulNombre?.dojo?.nombre ?? ''}</p>
 
-          <div className={`text-[10rem] font-black tabular-nums leading-none mt-4 ${
-            (shikkakuAzul || amonAzul >= 5) ? 'line-through text-zinc-700'
-              : puntosAzul > puntosRojo ? 'text-sky-400' : 'text-zinc-200'
-          }`}>
-            {puntosAzul}
+          <div className="relative inline-block mt-4">
+            <span className={`text-[10rem] font-black tabular-nums leading-none ${
+              (shikkakuAzul || amonAzul >= 5) ? 'line-through text-zinc-700'
+                : puntosAzul > puntosRojo ? 'text-sky-400' : 'text-zinc-200'
+            }`}>
+              {puntosAzul}
+            </span>
+            {senshu === 'azul' && (
+              <span className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/3 w-10 h-10 bg-yellow-400 rounded-lg text-xl font-black text-zinc-900 flex items-center justify-center leading-none">
+                S
+              </span>
+            )}
           </div>
 
-          <div className="flex gap-4 text-3xl font-bold">
-            {(combate.yuko_azul ?? 0) > 0 && <span className="text-sky-300">YUKO ×{combate.yuko_azul}</span>}
-            {(combate.waza_ari_azul ?? 0) > 0 && <span className="text-sky-200">WA ×{combate.waza_ari_azul}</span>}
-            {(combate.ippon_azul ?? 0) > 0 && <span className="text-white">IPPON ×{combate.ippon_azul}</span>}
+          <div className="flex gap-3 text-lg text-zinc-500 tabular-nums">
+            {(combate.yuko_azul ?? 0) > 0 && <span>Y×{combate.yuko_azul}</span>}
+            {(combate.waza_ari_azul ?? 0) > 0 && <span>WA×{combate.waza_ari_azul}</span>}
+            {(combate.ippon_azul ?? 0) > 0 && <span>IP×{combate.ippon_azul}</span>}
           </div>
-
-          {senshu === 'azul' && (
-            <div className="flex items-center gap-2 bg-yellow-500/20 border-2 border-yellow-400 px-5 py-2 rounded-xl">
-              <span className="text-yellow-300 text-2xl">★</span>
-              <span className="text-yellow-300 text-xl font-black tracking-widest">SENSHU</span>
-            </div>
-          )}
 
           <AmonBadge amon={amonAzul} shikkaku={shikkakuAzul} />
         </div>
@@ -260,25 +260,25 @@ export default function MesaTVPage() {
           </div>
           <p className="text-zinc-500 text-sm">{rojoNombre?.dojo?.nombre ?? ''}</p>
 
-          <div className={`text-[10rem] font-black tabular-nums leading-none mt-4 ${
-            (shikkakuRojo || amonRojo >= 5) ? 'line-through text-zinc-700'
-              : puntosRojo > puntosAzul ? 'text-rose-400' : 'text-zinc-200'
-          }`}>
-            {puntosRojo}
+          <div className="relative inline-block mt-4">
+            <span className={`text-[10rem] font-black tabular-nums leading-none ${
+              (shikkakuRojo || amonRojo >= 5) ? 'line-through text-zinc-700'
+                : puntosRojo > puntosAzul ? 'text-rose-400' : 'text-zinc-200'
+            }`}>
+              {puntosRojo}
+            </span>
+            {senshu === 'rojo' && (
+              <span className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/3 w-10 h-10 bg-yellow-400 rounded-lg text-xl font-black text-zinc-900 flex items-center justify-center leading-none">
+                S
+              </span>
+            )}
           </div>
 
-          <div className="flex gap-4 text-3xl font-bold">
-            {(combate.yuko_rojo ?? 0) > 0 && <span className="text-rose-300">YUKO ×{combate.yuko_rojo}</span>}
-            {(combate.waza_ari_rojo ?? 0) > 0 && <span className="text-rose-200">WA ×{combate.waza_ari_rojo}</span>}
-            {(combate.ippon_rojo ?? 0) > 0 && <span className="text-white">IPPON ×{combate.ippon_rojo}</span>}
+          <div className="flex gap-3 text-lg text-zinc-500 tabular-nums">
+            {(combate.yuko_rojo ?? 0) > 0 && <span>Y×{combate.yuko_rojo}</span>}
+            {(combate.waza_ari_rojo ?? 0) > 0 && <span>WA×{combate.waza_ari_rojo}</span>}
+            {(combate.ippon_rojo ?? 0) > 0 && <span>IP×{combate.ippon_rojo}</span>}
           </div>
-
-          {senshu === 'rojo' && (
-            <div className="flex items-center gap-2 bg-yellow-500/20 border-2 border-yellow-400 px-5 py-2 rounded-xl">
-              <span className="text-yellow-300 text-2xl">★</span>
-              <span className="text-yellow-300 text-xl font-black tracking-widest">SENSHU</span>
-            </div>
-          )}
 
           <AmonBadge amon={amonRojo} shikkaku={shikkakuRojo} />
         </div>
