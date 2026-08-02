@@ -17,6 +17,7 @@ import InscripcionesPage from './pages/torneo/InscripcionesPage'
 import InscripcionPublica from './pages/InscripcionPublica'
 import MarcadorPublico from './pages/MarcadorPublico'
 import MesaTatamiPage from './pages/mesa/MesaTatamiPage'
+import MesaBracketPage from './pages/mesa/MesaBracketPage'
 import MesaKumitePage from './pages/mesa/MesaKumitePage'
 import MesaTVPage from './pages/mesa/MesaTVPage'
 import LoginPage from './pages/auth/LoginPage'
@@ -80,7 +81,8 @@ export default function App() {
 
         {/* Mesa técnica — acceso por link, sin cuenta */}
         <Route path="/mesa/:token" element={<MesaTatamiPage />} />
-        <Route path="/mesa/:token/categoria/:catId" element={<MesaKumitePage />} />
+        <Route path="/mesa/:token/categoria/:catId" element={<MesaBracketPage />} />
+        <Route path="/mesa/:token/categoria/:catId/combate/:combateId" element={<MesaKumitePage />} />
         <Route path="/mesa/:token/categoria/:catId/tv" element={<MesaTVPage />} />
       </Routes>
     </BrowserRouter>

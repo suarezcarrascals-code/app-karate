@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, TelevisionSimple } from '@phosphor-icons/react'
 import { fetchLinkMesaByToken } from '../../lib/linksMesa'
-import { fetchCategorias, actualizarEstadoCategoria } from '../../lib/categorias'
-import { fetchProximoCombate, sincronizarMarcador, avanzarGanador } from '../../lib/combates'
+import { fetchCategorias } from '../../lib/categorias'
+import { sincronizarMarcador, avanzarGanador } from '../../lib/combates'
 import { fetchCompetidores } from '../../lib/competidores'
+import { supabase } from '../../lib/supabase'
 
 const DURACION_DEFAULT = 180 // 3 minutos en segundos
 
@@ -32,7 +33,7 @@ const MARCADOR_INICIAL = {
 }
 
 export default function MesaKumitePage() {
-  const { token, catId } = useParams()
+  const { token, catId, combateId } = useParams()
   const navigate = useNavigate()
 
   const [link, setLink] = useState(null)
@@ -56,12 +57,23 @@ export default function MesaKumitePage() {
   const duracion = calcularDuracion(categoria)
   const syncRef = useRef(null)
 
-  // Carga inicial
+  // Carga inicial — usa combateId del URL
   useEffect(() => {
     async function cargar() {
       const linkData = await fetchLinkMesaByToken(token)
       if (!linkData) { navigate('/'); return }
       setLink(linkData)
+
+      const { data: combateData, error } = await supabase
+        .from('combate')
+        .select('*')
+        .eq('id', combateId)
+        .single()
+
+      if (error || !combateData) { navigate(`/mesa/${token}/categoria/${catId}`); return }
+      if (!combateData.competidor_rojo_id || !combateData.competidor_azul_id) {
+        setSinCombates(true); setLoading(false); return
+      }
 
       const [cats, comps] = await Promise.all([
         fetchCategorias(linkData.torneo_id),
@@ -72,15 +84,13 @@ export default function MesaKumitePage() {
       setCategoria(cat)
       setTimerSeg(calcularDuracion(cat))
 
-      const prox = await fetchProximoCombate(catId)
-      if (!prox) { setSinCombates(true); setLoading(false); return }
-      setCombate(prox)
-      setRojo(comps.find((c) => c.id === prox.competidor_rojo_id) ?? null)
-      setAzul(comps.find((c) => c.id === prox.competidor_azul_id) ?? null)
+      setCombate(combateData)
+      setRojo(comps.find((c) => c.id === combateData.competidor_rojo_id) ?? null)
+      setAzul(comps.find((c) => c.id === combateData.competidor_azul_id) ?? null)
       setLoading(false)
     }
     cargar()
-  }, [token, catId, navigate])
+  }, [token, catId, combateId, navigate])
 
   // Timer
   useEffect(() => {
@@ -197,23 +207,7 @@ export default function MesaKumitePage() {
     const ganadorId = ganador === 'rojo' ? combate.competidor_rojo_id : combate.competidor_azul_id
     try {
       await avanzarGanador(combate.id, ganadorId, catId)
-      // Buscar próximo combate
-      const prox = await fetchProximoCombate(catId)
-      if (prox) {
-        const comps = await fetchCompetidores(link.torneo_id)
-        setCombate(prox)
-        setRojo(comps.find((c) => c.id === prox.competidor_rojo_id) ?? null)
-        setAzul(comps.find((c) => c.id === prox.competidor_azul_id) ?? null)
-        setMarcador(MARCADOR_INICIAL)
-        setHistorial([])
-        setTimerSeg(duracion)
-        setTimerActivo(false)
-        setAtoShibaraku(false)
-        setModalFin(null)
-      } else {
-        await actualizarEstadoCategoria(catId, 'finalizada')
-        navigate(`/mesa/${token}`)
-      }
+      navigate(`/mesa/${token}/categoria/${catId}`)
     } catch {
       // error silencioso — puede reintentar
     } finally {
@@ -293,10 +287,10 @@ export default function MesaKumitePage() {
     <div className="min-h-screen bg-zinc-950 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-900">
-        <button onClick={() => navigate(`/mesa/${token}`)}
+        <button onClick={() => navigate(`/mesa/${token}/categoria/${catId}`)}
           className="flex items-center gap-1.5 text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
           <ArrowLeft size={13} />
-          {link?.tatami?.nombre}
+          Bracket
         </button>
         <div className="text-center">
           <p className="text-xs font-semibold text-zinc-300 truncate max-w-[200px]">{categoria?.nombre}</p>
