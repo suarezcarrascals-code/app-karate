@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, TelevisionSimple } from '@phosphor-icons/react'
 import { fetchLinkMesaByToken } from '../../lib/linksMesa'
 import { fetchCategorias } from '../../lib/categorias'
-import { sincronizarMarcador, avanzarGanador } from '../../lib/combates'
+import { avanzarGanador } from '../../lib/combates'
 import { fetchCompetidores } from '../../lib/competidores'
 import { supabase } from '../../lib/supabase'
 
@@ -26,55 +26,37 @@ function calcularDuracion(categoria) {
 const MARCADOR_INICIAL = {
   puntosRojo: 0, yukoRojo: 0, wazaAriRojo: 0, ipponRojo: 0,
   puntosAzul: 0, yukoAzul: 0, wazaAriAzul: 0, ipponAzul: 0,
-  c1Rojo: 0, c2Rojo: 0,
-  c1Azul: 0, c2Azul: 0,
+  amonRojo: 0, amonAzul: 0,
+  shikkakuRojo: false, shikkakuAzul: false,
   senshu: null,
 }
 
-// Niveles: 0=none, 1=W(Chui), 2=K(Keikoku), 3=HC(Hansoku-chui), 4=H(Hansoku)
-const PENAL_NIVELES = [
-  { nivel: 1, label: 'W' },
-  { nivel: 2, label: 'K' },
-  { nivel: 3, label: 'HC' },
-  { nivel: 4, label: 'H' },
-]
+// nivel: 0=ninguna, 1=1C, 2=2C, 3=3C, 4=HC, 5+=H(DQ)
+function labelAmon(n, shikkaku) {
+  if (shikkaku) return 'SHIKKAKU'
+  if (n <= 0) return null
+  if (n === 4) return 'HC'
+  if (n >= 5) return 'H'
+  return `${n}C`
+}
 
-const PENAL_LABEL = ['—', 'W', 'K', 'HC', 'H']
-const PENAL_TITLE = ['—', 'Chui', 'Keikoku (+1 rival)', 'Hansoku-chui', 'Hansoku (DQ)']
+// 5 puntos progresivos: 1-3 chui (amarillo), 4 HC (naranja), 5 H (rojo)
+const DOT_FILL = ['', 'bg-yellow-400', 'bg-yellow-400', 'bg-amber-500', 'bg-orange-500', 'bg-red-600']
 
-function PenalRows({ lado, c1, c2, descalificado, onSet }) {
-  const activeClass = lado === 'azul' ? 'bg-sky-600 text-white' : 'bg-rose-600 text-white'
-
+function DotsAmon({ nivel, shikkaku }) {
   return (
-    <div className="space-y-1.5">
-      {[{ fila: 'c1', nivel: c1 }, { fila: 'c2', nivel: c2 }].map(({ fila, nivel }) => (
-        <div key={fila} className="flex items-center gap-1">
-          <span className="text-[10px] font-bold text-zinc-600 w-5 shrink-0 text-center">
-            {fila.toUpperCase()}
-          </span>
-          {PENAL_NIVELES.map(({ nivel: n, label }) => {
-            const esActivo = nivel === n
-            const esPasado = nivel > n
-            const bloqueado = descalificado || n <= nivel
-            return (
-              <button
-                key={n}
-                disabled={bloqueado}
-                onClick={() => onSet(lado, fila, n)}
-                className={`flex-1 py-1 rounded text-[11px] font-bold transition-colors ${
-                  esActivo
-                    ? activeClass
-                    : esPasado
-                    ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                    : 'bg-zinc-900 border border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed'
-                }`}
-              >
-                {esPasado ? '·' : label}
-              </button>
-            )
-          })}
-        </div>
-      ))}
+    <div className="flex gap-1.5 justify-center">
+      {[1, 2, 3, 4, 5].map((n) => {
+        const lleno = shikkaku || nivel >= n
+        return (
+          <div
+            key={n}
+            className={`w-3.5 h-3.5 rounded-full border-2 transition-all ${
+              lleno ? `${DOT_FILL[n]} border-transparent` : 'bg-transparent border-zinc-700'
+            }`}
+          />
+        )
+      })}
     </div>
   )
 }
@@ -99,16 +81,18 @@ export default function MesaKumitePage() {
 
   const [modalFin, setModalFin] = useState(null)
   const [guardando, setGuardando] = useState(false)
-  const [confirmPenalizacion, setConfirmPenalizacion] = useState(null) // { lado, fila, nivel }
+  const [confirmPenal, setConfirmPenal] = useState(null) // { lado, accion }
   const [confirmReset, setConfirmReset] = useState(false)
+  const [undoRojo, setUndoRojo] = useState(null) // valor previo de amonRojo para deshacer
+  const [undoAzul, setUndoAzul] = useState(null) // valor previo de amonAzul para deshacer
 
   const duracion = calcularDuracion(categoria)
   const syncRef = useRef(null)
 
-  const descalificadoRojo = marcador.c1Rojo >= 4 || marcador.c2Rojo >= 4
-  const descalificadoAzul = marcador.c1Azul >= 4 || marcador.c2Azul >= 4
+  const descalificadoRojo = marcador.amonRojo >= 5 || marcador.shikkakuRojo
+  const descalificadoAzul = marcador.amonAzul >= 5 || marcador.shikkakuAzul
 
-  // Carga inicial — usa combateId del URL
+  // Carga inicial
   useEffect(() => {
     async function cargar() {
       const linkData = await fetchLinkMesaByToken(token)
@@ -156,14 +140,13 @@ export default function MesaKumitePage() {
     return () => clearInterval(id)
   }, [timerActivo])
 
-  // Sync al DB (debounced 800ms) — resiliente: si c1/c2 no existen aún, sincroniza igual sin ellos
+  // Sync al DB — resiliente: intenta con columnas de penalizaciones; fallback a solo scores
   useEffect(() => {
     if (!combate) return
     if (syncRef.current) clearTimeout(syncRef.current)
     syncRef.current = setTimeout(async () => {
       const base = {
-        puntos_rojo: marcador.puntosRojo,
-        puntos_azul: marcador.puntosAzul,
+        puntos_rojo: marcador.puntosRojo, puntos_azul: marcador.puntosAzul,
         yuko_rojo: marcador.yukoRojo, waza_ari_rojo: marcador.wazaAriRojo, ippon_rojo: marcador.ipponRojo,
         yuko_azul: marcador.yukoAzul, waza_ari_azul: marcador.wazaAriAzul, ippon_azul: marcador.ipponAzul,
         senshu: marcador.senshu,
@@ -171,11 +154,10 @@ export default function MesaKumitePage() {
       }
       const { error } = await supabase.from('combate').update({
         ...base,
-        c1_rojo: marcador.c1Rojo, c2_rojo: marcador.c2Rojo,
-        c1_azul: marcador.c1Azul, c2_azul: marcador.c2Azul,
+        amon_rojo: marcador.amonRojo, amon_azul: marcador.amonAzul,
+        shikkaku_rojo: marcador.shikkakuRojo, shikkaku_azul: marcador.shikkakuAzul,
       }).eq('id', combate.id)
       if (error) {
-        // Fallback: columnas c1/c2 no existen todavía — sincroniza al menos los scores
         await supabase.from('combate').update(base).eq('id', combate.id).catch(() => {})
       }
     }, 800)
@@ -206,23 +188,64 @@ export default function MesaKumitePage() {
     setHistorial((h) => h.slice(0, -1))
   }, [historial])
 
-  function aplicarPenalizacion(lado, fila, nivel) {
-    const sufijo = lado === 'rojo' ? 'Rojo' : 'Azul'
-    const clave = `${fila}${sufijo}`
-    const prevNivel = marcador[clave]
+  // ── Penalizaciones ───────────────────────────────────────────────────────────
 
-    if (nivel <= prevNivel) { setConfirmPenalizacion(null); return }
-
-    setHistorial((h) => [...h, { ...marcador }])
-    setMarcador((prev) => ({ ...prev, [clave]: nivel }))
-
-    // H (nivel 4) → rival gana el bout
-    if (nivel >= 4) {
+  function incrementarChui(lado) {
+    const clave = `amon${lado === 'rojo' ? 'Rojo' : 'Azul'}`
+    const nivel = marcador[clave]
+    if (nivel >= 5) return
+    if (lado === 'rojo') setUndoRojo(nivel); else setUndoAzul(nivel)
+    const nuevoNivel = nivel + 1
+    setMarcador((prev) => ({ ...prev, [clave]: nuevoNivel }))
+    if (nuevoNivel >= 5) {
+      const amonRival = lado === 'rojo' ? marcador.amonAzul : marcador.amonRojo
+      const shikkakuRival = lado === 'rojo' ? marcador.shikkakuAzul : marcador.shikkakuRojo
       const ganador = lado === 'rojo' ? 'azul' : 'rojo'
-      setTimeout(() => setModalFin({ ganador, porPuntos: false, hansoku: true }), 150)
+      if (amonRival >= 5 || shikkakuRival) {
+        setTimeout(() => setModalFin({ ganador: null, dobleHansoku: true }), 150)
+      } else {
+        setTimeout(() => setModalFin({ ganador, porPuntos: false, hansoku: true }), 150)
+      }
     }
+  }
 
-    setConfirmPenalizacion(null)
+  function aplicarPenal(lado, accion) {
+    const clave = `amon${lado === 'rojo' ? 'Rojo' : 'Azul'}`
+    const shikkakuClave = `shikkaku${lado === 'rojo' ? 'Rojo' : 'Azul'}`
+    const nivel = marcador[clave]
+    const ganador = lado === 'rojo' ? 'azul' : 'rojo'
+    const amonRival = lado === 'rojo' ? marcador.amonAzul : marcador.amonRojo
+    const shikkakuRival = lado === 'rojo' ? marcador.shikkakuAzul : marcador.shikkakuRojo
+    const doble = amonRival >= 5 || shikkakuRival
+
+    if (accion === 'hc') {
+      if (lado === 'rojo') setUndoRojo(nivel); else setUndoAzul(nivel)
+      setMarcador((prev) => ({ ...prev, [clave]: 4 }))
+    } else if (accion === 'hansoku') {
+      if (lado === 'rojo') setUndoRojo(nivel); else setUndoAzul(nivel)
+      setMarcador((prev) => ({ ...prev, [clave]: 5 }))
+      if (doble) {
+        setTimeout(() => setModalFin({ ganador: null, dobleHansoku: true }), 150)
+      } else {
+        setTimeout(() => setModalFin({ ganador, porPuntos: false, hansoku: true }), 150)
+      }
+    } else if (accion === 'shikkaku') {
+      setMarcador((prev) => ({ ...prev, [shikkakuClave]: true }))
+      if (doble) {
+        setTimeout(() => setModalFin({ ganador: null, dobleHansoku: true }), 150)
+      } else {
+        setTimeout(() => setModalFin({ ganador, porPuntos: false, shikkaku: true }), 150)
+      }
+    }
+    setConfirmPenal(null)
+  }
+
+  function deshacerPenal(lado) {
+    const clave = `amon${lado === 'rojo' ? 'Rojo' : 'Azul'}`
+    const prev = lado === 'rojo' ? undoRojo : undoAzul
+    if (prev === null) return
+    setMarcador((m) => ({ ...m, [clave]: prev }))
+    if (lado === 'rojo') setUndoRojo(null); else setUndoAzul(null)
   }
 
   function toggleSenshu(lado) {
@@ -233,6 +256,8 @@ export default function MesaKumitePage() {
     const dur = calcularDuracion(categoria)
     setMarcador({ ...MARCADOR_INICIAL })
     setHistorial([])
+    setUndoRojo(null)
+    setUndoAzul(null)
     setTimerSeg(dur)
     setTimerActivo(false)
     setAtoShibaraku(false)
@@ -243,7 +268,8 @@ export default function MesaKumitePage() {
         puntos_rojo: 0, puntos_azul: 0,
         yuko_rojo: 0, waza_ari_rojo: 0, ippon_rojo: 0,
         yuko_azul: 0, waza_ari_azul: 0, ippon_azul: 0,
-        c1_rojo: 0, c2_rojo: 0, c1_azul: 0, c2_azul: 0,
+        amon_rojo: 0, amon_azul: 0,
+        shikkaku_rojo: false, shikkaku_azul: false,
         senshu: null,
         timer_activo: false, timer_seg_restantes: dur, timer_inicio_ts: null,
       }).eq('id', combate.id).then(() => {})
@@ -273,7 +299,7 @@ export default function MesaKumitePage() {
       await avanzarGanador(combate.id, ganadorId, catId)
       navigate(`/mesa/${token}/categoria/${catId}`)
     } catch {
-      // silencioso — puede reintentar
+      // silencioso
     } finally {
       setGuardando(false)
     }
@@ -310,6 +336,82 @@ export default function MesaKumitePage() {
 
   const INPUT_BTN = 'flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-30'
 
+  function renderPenalSection(lado) {
+    const sufijo = lado === 'rojo' ? 'Rojo' : 'Azul'
+    const amon = marcador[`amon${sufijo}`]
+    const shikkaku = marcador[`shikkaku${sufijo}`]
+    const descalificado = amon >= 5 || shikkaku
+    const undoVal = lado === 'rojo' ? undoRojo : undoAzul
+    const lbl = labelAmon(amon, shikkaku)
+    const colorChui = lado === 'rojo'
+      ? 'bg-rose-900/40 border-rose-800/60 text-rose-300 hover:bg-rose-800/50'
+      : 'bg-sky-900/40 border-sky-800/60 text-sky-300 hover:bg-sky-800/50'
+
+    return (
+      <div className="space-y-2">
+        {/* Indicador: 5 dots + etiqueta de nivel */}
+        <div className="flex flex-col items-center gap-1">
+          <DotsAmon nivel={amon} shikkaku={shikkaku} />
+          {lbl && (
+            <span className={`text-[11px] font-black tracking-widest ${
+              shikkaku ? 'text-purple-400'
+                : amon >= 5 ? 'text-red-400'
+                : amon === 4 ? 'text-orange-400'
+                : 'text-amber-400'
+            }`}>
+              {lbl}{amon >= 5 && !shikkaku ? ' — DQ' : ''}
+            </span>
+          )}
+        </div>
+
+        {/* + Chui — directo, sin confirmar; tiene ↩ penal para deshacer */}
+        <button
+          disabled={descalificado}
+          onClick={() => incrementarChui(lado)}
+          className={`w-full py-2.5 rounded-xl text-sm font-bold border transition-colors disabled:opacity-30 ${colorChui}`}
+        >
+          + Chui
+        </button>
+
+        {/* HC directo | H directo (con confirm) */}
+        <div className="flex gap-1.5">
+          <button
+            disabled={descalificado || amon >= 4}
+            onClick={() => setConfirmPenal({ lado, accion: 'hc' })}
+            className="flex-1 py-1.5 rounded-lg text-[11px] font-bold bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 transition-colors disabled:opacity-30"
+          >
+            HC dir.
+          </button>
+          <button
+            disabled={descalificado}
+            onClick={() => setConfirmPenal({ lado, accion: 'hansoku' })}
+            className="flex-1 py-1.5 rounded-lg text-[11px] font-bold bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-red-400 hover:border-red-900 transition-colors disabled:opacity-30"
+          >
+            H dir.
+          </button>
+        </div>
+
+        {/* Shikkaku (con confirm) | ↩ penal */}
+        <div className="flex gap-1.5">
+          <button
+            disabled={shikkaku}
+            onClick={() => setConfirmPenal({ lado, accion: 'shikkaku' })}
+            className="flex-1 py-1.5 rounded-lg text-[11px] font-bold bg-zinc-900 border border-red-900/40 text-red-700 hover:border-red-700 hover:text-red-400 transition-colors disabled:opacity-30"
+          >
+            Shikkaku
+          </button>
+          <button
+            disabled={undoVal === null}
+            onClick={() => deshacerPenal(lado)}
+            className="flex-1 py-1.5 rounded-lg text-[11px] bg-zinc-900 border border-zinc-800 text-zinc-600 hover:text-zinc-400 transition-colors disabled:opacity-30"
+          >
+            ↩ penal
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col">
       {/* Header */}
@@ -343,10 +445,19 @@ export default function MesaKumitePage() {
             <p className="text-xs text-zinc-600 truncate">{azul?.dojo?.nombre}</p>
           </div>
 
-          <div className={`text-center text-6xl font-black tabular-nums ${
-            descalificadoAzul ? 'line-through text-zinc-700' : 'text-sky-400'
-          }`}>
-            {marcador.puntosAzul}
+          <div className="text-center">
+            <div className={`text-6xl font-black tabular-nums ${
+              descalificadoAzul ? 'line-through text-zinc-700' : 'text-sky-400'
+            }`}>
+              {marcador.puntosAzul}
+            </div>
+            {descalificadoAzul && (
+              <p className={`text-[11px] font-black tracking-widest mt-0.5 ${
+                marcador.shikkakuAzul ? 'text-purple-500' : 'text-red-500'
+              }`}>
+                {marcador.shikkakuAzul ? 'SHIKKAKU' : 'HANSOKU'}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -370,13 +481,7 @@ export default function MesaKumitePage() {
             {marcador.ipponAzul > 0 && <span>IP×{marcador.ipponAzul}</span>}
           </div>
 
-          <PenalRows
-            lado="azul"
-            c1={marcador.c1Azul}
-            c2={marcador.c2Azul}
-            descalificado={descalificadoAzul}
-            onSet={(lado, fila, nivel) => setConfirmPenalizacion({ lado, fila, nivel })}
-          />
+          {renderPenalSection('azul')}
 
           <button
             onClick={() => toggleSenshu('azul')}
@@ -398,10 +503,19 @@ export default function MesaKumitePage() {
             <p className="text-xs text-zinc-600 truncate">{rojo?.dojo?.nombre}</p>
           </div>
 
-          <div className={`text-center text-6xl font-black tabular-nums ${
-            descalificadoRojo ? 'line-through text-zinc-700' : 'text-rose-400'
-          }`}>
-            {marcador.puntosRojo}
+          <div className="text-center">
+            <div className={`text-6xl font-black tabular-nums ${
+              descalificadoRojo ? 'line-through text-zinc-700' : 'text-rose-400'
+            }`}>
+              {marcador.puntosRojo}
+            </div>
+            {descalificadoRojo && (
+              <p className={`text-[11px] font-black tracking-widest mt-0.5 ${
+                marcador.shikkakuRojo ? 'text-purple-500' : 'text-red-500'
+              }`}>
+                {marcador.shikkakuRojo ? 'SHIKKAKU' : 'HANSOKU'}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -425,13 +539,7 @@ export default function MesaKumitePage() {
             {marcador.ipponRojo > 0 && <span>IP×{marcador.ipponRojo}</span>}
           </div>
 
-          <PenalRows
-            lado="rojo"
-            c1={marcador.c1Rojo}
-            c2={marcador.c2Rojo}
-            descalificado={descalificadoRojo}
-            onSet={(lado, fila, nivel) => setConfirmPenalizacion({ lado, fila, nivel })}
-          />
+          {renderPenalSection('rojo')}
 
           <button
             onClick={() => toggleSenshu('rojo')}
@@ -506,7 +614,7 @@ export default function MesaKumitePage() {
           disabled={historial.length === 0}
           className="text-xs text-zinc-600 hover:text-zinc-400 disabled:opacity-30 transition-colors py-2 px-3 bg-zinc-900 border border-zinc-800 rounded-lg"
         >
-          ↩ Deshacer
+          ↩ Puntos
         </button>
         <button
           onClick={() => setConfirmReset(true)}
@@ -522,44 +630,53 @@ export default function MesaKumitePage() {
         </button>
       </div>
 
-      {/* Modal confirmación penalización */}
-      {confirmPenalizacion && (() => {
-        const { lado, fila, nivel } = confirmPenalizacion
-        const sufijo = lado === 'rojo' ? 'Rojo' : 'Azul'
-        const clave = `${fila}${sufijo}`
+      {/* Modal confirmación penalización — HC dir., H dir., Shikkaku */}
+      {confirmPenal && (() => {
+        const { lado, accion } = confirmPenal
         const nombre = lado === 'rojo'
           ? `${rojo?.nombre ?? ''} ${rojo?.apellido ?? ''}`.trim()
           : `${azul?.nombre ?? ''} ${azul?.apellido ?? ''}`.trim()
-        const esHansoku = nivel >= 4
+        const titulo = accion === 'hc'
+          ? 'Hansoku-chui directo'
+          : accion === 'hansoku'
+          ? 'HANSOKU — Descalificación del combate'
+          : 'SHIKKAKU — Descalificación del torneo'
 
         return (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 max-w-xs w-full shadow-2xl">
-              <p className="font-bold text-zinc-100 mb-0.5 text-sm">
-                {fila.toUpperCase()} → <span className="uppercase tracking-wide">{PENAL_LABEL[nivel]}</span>
-              </p>
-              <p className="text-xs text-zinc-500 mb-3">{PENAL_TITLE[nivel]}</p>
+              <p className="font-bold text-zinc-100 mb-3 text-sm">{titulo}</p>
               <p className="text-sm text-zinc-400 mb-3">
                 Aplicar a{' '}
                 <span className={`font-bold ${lado === 'rojo' ? 'text-rose-400' : 'text-sky-400'}`}>
                   {nombre}
                 </span>
               </p>
-              {esHansoku && (
-                <div className="text-xs bg-red-950/50 border border-red-800/50 text-red-400 px-3 py-2 rounded-lg mb-3 font-semibold">
-                  HANSOKU — el rival gana el combate
+              {(accion === 'hansoku' || accion === 'shikkaku') && (
+                <div className={`text-xs px-3 py-2 rounded-lg mb-3 font-semibold ${
+                  accion === 'shikkaku'
+                    ? 'bg-purple-950/50 border border-purple-800/50 text-purple-400'
+                    : 'bg-red-950/50 border border-red-800/50 text-red-400'
+                }`}>
+                  {accion === 'shikkaku'
+                    ? 'El competidor queda descalificado del torneo completo'
+                    : 'El rival gana el combate automáticamente'}
                 </div>
               )}
               <div className="flex gap-2 mt-4">
                 <button
-                  onClick={() => setConfirmPenalizacion(null)}
+                  onClick={() => setConfirmPenal(null)}
                   className="flex-1 bg-zinc-800 text-zinc-300 py-2.5 rounded-lg text-sm hover:bg-zinc-700 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={() => aplicarPenalizacion(lado, fila, nivel)}
-                  className="flex-1 bg-rose-700 text-white py-2.5 rounded-lg text-sm font-bold hover:bg-rose-600 transition-colors"
+                  onClick={() => aplicarPenal(lado, accion)}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                    accion === 'shikkaku'
+                      ? 'bg-purple-700 hover:bg-purple-600 text-white'
+                      : 'bg-rose-700 hover:bg-rose-600 text-white'
+                  }`}
                 >
                   Confirmar
                 </button>
@@ -599,10 +716,31 @@ export default function MesaKumitePage() {
       {modalFin && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl text-center">
-            {modalFin.ganador ? (
+            {modalFin.dobleHansoku ? (
+              <>
+                <p className="text-xs text-red-500 mb-2 uppercase tracking-widest font-bold">Doble Descalificación</p>
+                <p className="text-zinc-300 font-semibold mb-1">Ambos competidores están descalificados</p>
+                <p className="text-zinc-500 text-sm mb-5">
+                  Consulte el reglamento (Art. 10.3.2) y resuelva en el bracket manualmente.
+                </p>
+                <button
+                  onClick={() => navigate(`/mesa/${token}/categoria/${catId}`)}
+                  className="w-full py-2.5 bg-zinc-800 text-zinc-200 rounded-lg text-sm font-semibold hover:bg-zinc-700 transition-colors"
+                >
+                  Ir al bracket
+                </button>
+                <button onClick={() => setModalFin(null)}
+                  className="w-full mt-2 py-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
+                  Cancelar
+                </button>
+              </>
+            ) : modalFin.ganador ? (
               <>
                 <p className="text-xs text-zinc-500 mb-2 uppercase tracking-widest">
-                  {modalFin.autowin ? 'Victoria por 8 puntos' : modalFin.hansoku ? 'HANSOKU' : 'Fin del tiempo'}
+                  {modalFin.autowin ? 'Victoria por 8 puntos'
+                    : modalFin.shikkaku ? 'SHIKKAKU'
+                    : modalFin.hansoku ? 'HANSOKU'
+                    : 'Fin del tiempo'}
                 </p>
                 <div className={`text-4xl font-black mb-1 ${modalFin.ganador === 'rojo' ? 'text-rose-400' : 'text-sky-400'}`}>
                   {modalFin.ganador === 'rojo'

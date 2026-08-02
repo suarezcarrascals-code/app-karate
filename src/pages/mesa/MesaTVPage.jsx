@@ -18,6 +18,45 @@ function calcularSegRestantes(combate) {
   return Math.max(0, base - elapsed)
 }
 
+// 5 puntos progresivos: 1-3 Chui (amarillo), 4 HC (naranja), 5 H (rojo)
+const DOT_TV = [
+  '', 'bg-yellow-400', 'bg-yellow-400', 'bg-amber-500', 'bg-orange-500', 'bg-red-600',
+]
+
+function AmonBadge({ amon, shikkaku }) {
+  const nivel = shikkaku ? 5 : (amon ?? 0)
+  const esH = nivel >= 5
+  const esHC = nivel === 4
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex gap-2">
+        {[1, 2, 3, 4, 5].map((n) => {
+          const lleno = nivel >= n
+          return (
+            <div
+              key={n}
+              className={`w-5 h-5 rounded-full border-2 transition-all ${
+                lleno ? `${DOT_TV[n]} border-transparent` : 'bg-transparent border-zinc-700'
+              }`}
+            />
+          )
+        })}
+      </div>
+      {esH && (
+        <span className={`text-sm font-black tracking-widest ${
+          shikkaku ? 'text-purple-400' : 'text-red-400'
+        }`}>
+          {shikkaku ? 'SHIKKAKU' : 'HANSOKU'}
+        </span>
+      )}
+      {esHC && !esH && (
+        <span className="text-sm font-black tracking-widest text-orange-400">HC</span>
+      )}
+    </div>
+  )
+}
+
 export default function MesaTVPage() {
   const { token, catId, combateId } = useParams()
 
@@ -31,7 +70,6 @@ export default function MesaTVPage() {
   const [timerSeg, setTimerSeg] = useState(180)
   const timerRef = useRef(null)
 
-  // Cache de IDs para evitar re-fetch de nombres innecesario
   const compsCacheRef = useRef({})
 
   useEffect(() => {
@@ -42,7 +80,6 @@ export default function MesaTVPage() {
     return () => { window.removeEventListener('online', up); window.removeEventListener('offline', down) }
   }, [])
 
-  // Carga inicial de metadatos (link + categoria)
   useEffect(() => {
     async function cargar() {
       const linkData = await fetchLinkMesaByToken(token)
@@ -56,7 +93,6 @@ export default function MesaTVPage() {
     cargar()
   }, [token, catId])
 
-  // Función para resolver nombre de un competidor (con cache)
   async function resolverNombre(id) {
     if (!id) return null
     if (compsCacheRef.current[id]) return compsCacheRef.current[id]
@@ -72,7 +108,6 @@ export default function MesaTVPage() {
     return null
   }
 
-  // Polling cada 1.5s — sin depender de Realtime
   useEffect(() => {
     let activo = true
 
@@ -83,7 +118,6 @@ export default function MesaTVPage() {
         const res = await supabase.from('combate').select('*').eq('id', combateId).single()
         data = res.data ?? null
       } else {
-        // fallback: buscar el combate en_curso de la categoría
         const res = await supabase
           .from('combate')
           .select('*')
@@ -97,11 +131,9 @@ export default function MesaTVPage() {
       if (data) {
         setCombate(data)
 
-        // Sincronizar timer: recalcular desde timestamp del servidor
         const seg = calcularSegRestantes(data)
         setTimerSeg(seg)
 
-        // Arrancar/detener countdown local según estado del timer
         if (timerRef.current) clearInterval(timerRef.current)
         if (data.timer_activo && data.timer_inicio_ts && seg > 0) {
           const startedAt = Date.now()
@@ -152,47 +184,13 @@ export default function MesaTVPage() {
     )
   }
 
-  const PENAL_BOXES = [
-    { n: 1, label: 'W',  lleno: 'bg-yellow-500 border-yellow-400 text-zinc-900' },
-    { n: 2, label: 'K',  lleno: 'bg-amber-500  border-amber-400  text-zinc-900' },
-    { n: 3, label: 'HC', lleno: 'bg-orange-500 border-orange-400 text-white'    },
-    { n: 4, label: 'H',  lleno: 'bg-red-600    border-red-500    text-white'    },
-  ]
-  function C1C2Badge({ c1, c2 }) {
-    function Fila({ label, nivel }) {
-      return (
-        <div className="flex items-center gap-2">
-          <span className="text-zinc-500 text-sm font-bold w-7 shrink-0">{label}</span>
-          <div className="flex gap-1.5">
-            {PENAL_BOXES.map(({ n, label: l, lleno }) => (
-              <div
-                key={n}
-                className={`w-9 h-9 rounded-lg border-2 flex items-center justify-center text-xs font-black ${
-                  nivel >= n ? lleno : 'bg-transparent border-zinc-700 text-zinc-700'
-                }`}
-              >
-                {l}
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-    }
-    return (
-      <div className="space-y-1.5">
-        <Fila label="C1" nivel={c1} />
-        <Fila label="C2" nivel={c2} />
-      </div>
-    )
-  }
-
-  const puntosRojo = combate.puntos_rojo ?? 0
-  const puntosAzul = combate.puntos_azul ?? 0
-  const c1Rojo     = combate.c1_rojo ?? 0
-  const c2Rojo     = combate.c2_rojo ?? 0
-  const c1Azul     = combate.c1_azul ?? 0
-  const c2Azul     = combate.c2_azul ?? 0
-  const senshu     = combate.senshu
+  const puntosRojo  = combate.puntos_rojo  ?? 0
+  const puntosAzul  = combate.puntos_azul  ?? 0
+  const amonRojo    = combate.amon_rojo    ?? 0
+  const amonAzul    = combate.amon_azul    ?? 0
+  const shikkakuRojo = combate.shikkaku_rojo ?? false
+  const shikkakuAzul = combate.shikkaku_azul ?? false
+  const senshu      = combate.senshu
 
   const nombreRonda = (() => {
     if (combate.orden_en_ronda === 0) return '3er Puesto'
@@ -230,7 +228,8 @@ export default function MesaTVPage() {
           <p className="text-zinc-500 text-sm">{azulNombre?.dojo?.nombre ?? ''}</p>
 
           <div className={`text-[10rem] font-black tabular-nums leading-none mt-4 ${
-            puntosAzul > puntosRojo ? 'text-sky-400' : 'text-zinc-200'
+            (shikkakuAzul || amonAzul >= 5) ? 'line-through text-zinc-700'
+              : puntosAzul > puntosRojo ? 'text-sky-400' : 'text-zinc-200'
           }`}>
             {puntosAzul}
           </div>
@@ -248,7 +247,7 @@ export default function MesaTVPage() {
             </div>
           )}
 
-          <C1C2Badge c1={c1Azul} c2={c2Azul} />
+          <AmonBadge amon={amonAzul} shikkaku={shikkakuAzul} />
         </div>
 
         {/* AKA (rojo) — derecha */}
@@ -262,7 +261,8 @@ export default function MesaTVPage() {
           <p className="text-zinc-500 text-sm">{rojoNombre?.dojo?.nombre ?? ''}</p>
 
           <div className={`text-[10rem] font-black tabular-nums leading-none mt-4 ${
-            puntosRojo > puntosAzul ? 'text-rose-400' : 'text-zinc-200'
+            (shikkakuRojo || amonRojo >= 5) ? 'line-through text-zinc-700'
+              : puntosRojo > puntosAzul ? 'text-rose-400' : 'text-zinc-200'
           }`}>
             {puntosRojo}
           </div>
@@ -280,7 +280,7 @@ export default function MesaTVPage() {
             </div>
           )}
 
-          <C1C2Badge c1={c1Rojo} c2={c2Rojo} />
+          <AmonBadge amon={amonRojo} shikkaku={shikkakuRojo} />
         </div>
       </div>
 
@@ -306,7 +306,6 @@ export default function MesaTVPage() {
           </p>
         )}
       </div>
-
     </div>
   )
 }
