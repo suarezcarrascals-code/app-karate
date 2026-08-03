@@ -574,6 +574,24 @@ export default function MesaKataPage() {
         {/* ── FASE: ROJO PERFORMANCE ── */}
         {fase === 'rojo_performance' && (
           <div className="space-y-4">
+            {/* Toggle jueces — editable hasta que AKA confirme */}
+            <div className="flex items-center gap-3 bg-zinc-900 rounded-xl border border-zinc-800 px-4 py-2.5">
+              <span className="text-xs text-zinc-500 flex-1">Jueces</span>
+              {[3, 5].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => { cambiarNumJueces(n); setScoresRojo({ ...SCORES_INIT }) }}
+                  className={`w-10 py-1 rounded-lg text-sm font-bold transition-colors ${
+                    numJueces === n
+                      ? 'bg-zinc-500 text-white'
+                      : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+
             <div className="bg-zinc-900 rounded-xl border border-rose-900/60 p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold text-rose-400 uppercase tracking-wider">AKA actúa</p>
