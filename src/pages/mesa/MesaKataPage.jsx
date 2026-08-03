@@ -201,25 +201,25 @@ export default function MesaKataPage() {
   function inferirFase(c) {
     // Inferir número de jueces: si j4_rojo tiene valor → 5, si j1_rojo existe pero j4 es null → 3
     // Antes de confirmar AKA leer localStorage
-    if (c.j1_rojo !== null) {
-      setNumJueces(c.j4_rojo !== null ? 5 : 3)
+    if (c.j1_rojo != null) {
+      setNumJueces(c.j4_rojo != null ? 5 : 3)
     } else {
       const saved = localStorage.getItem(`kata_jueces_${c.id}`)
       if (saved) setNumJueces(parseInt(saved, 10))
     }
 
-    const nj = c.j1_rojo !== null ? (c.j4_rojo !== null ? 5 : 3) : 5
+    const nj = c.j1_rojo != null ? (c.j4_rojo != null ? 5 : 3) : 5
 
     if (c.estado === 'finalizado') {
       setFase('resultado')
-      if (c.j1_rojo !== null) {
+      if (c.j1_rojo != null) {
         const sR = JUECES.reduce((acc, j) => ({ ...acc, [j]: c[`${j}_rojo`] ?? '' }), {})
         const sA = JUECES.reduce((acc, j) => ({ ...acc, [j]: c[`${j}_azul`] ?? '' }), {})
         setScoresRojo(sR)
         setScoresAzul(sA)
         if (c.j1_azul !== null) recalcularResultado(sR, sA, nj)
       }
-    } else if (c.j1_rojo !== null) {
+    } else if (c.j1_rojo != null) {
       setFase('azul_performance')
       const sR = JUECES.reduce((acc, j) => ({ ...acc, [j]: c[`${j}_rojo`] ?? '' }), {})
       setScoresRojo(sR)
