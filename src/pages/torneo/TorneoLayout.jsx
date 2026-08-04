@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom'
-import { ArrowLeft, SquaresFour, Buildings, UsersThree, Tag, LinkSimple, SignOut, ShieldCheck, ArrowRight } from '@phosphor-icons/react'
+import { ArrowLeft, SquaresFour, Buildings, UsersThree, Tag, LinkSimple, SignOut, ShieldCheck, ArrowRight, Eye, Copy, Check } from '@phosphor-icons/react'
 import useAuthStore from '../../stores/useAuthStore'
 import { fetchTorneoById, cambiarEstadoTorneo } from '../../lib/torneos'
 import EstadoBadge from '../../components/torneos/EstadoBadge'
@@ -31,7 +31,16 @@ export default function TorneoLayout() {
   const location = useLocation()
   const [torneo, setTorneo] = useState(null)
   const [avanzando, setAvanzando] = useState(false)
+  const [copiado, setCopiado] = useState(false)
   const { profile, signOut } = useAuthStore()
+
+  const urlPublica = `${window.location.origin}/torneo/${id}/publico`
+
+  async function handleCopiarLink() {
+    await navigator.clipboard.writeText(urlPublica)
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 2000)
+  }
 
   async function handleAvanzarEstado() {
     if (!torneo) return
@@ -81,6 +90,24 @@ export default function TorneoLayout() {
           )}
         </div>
         {torneo?.estado && <EstadoBadge estado={torneo.estado} />}
+        <div className="flex items-center gap-1 shrink-0">
+          <a
+            href={urlPublica}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 rounded-lg transition-colors"
+            title="Vista pública"
+          >
+            <Eye size={16} />
+          </a>
+          <button
+            onClick={handleCopiarLink}
+            className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 rounded-lg transition-colors"
+            title="Copiar link público"
+          >
+            {copiado ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
+          </button>
+        </div>
       </div>
 
       {/* Desktop sidebar */}
@@ -124,6 +151,24 @@ export default function TorneoLayout() {
                   {avanzando ? '...' : ESTADO_LABEL_SIGUIENTE[torneo.estado]}
                 </button>
               )}
+              <div className="flex gap-1.5">
+                <a
+                  href={urlPublica}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-1.5 text-xs py-1.5 px-3 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-colors"
+                >
+                  <Eye size={11} />
+                  Vista pública
+                </a>
+                <button
+                  onClick={handleCopiarLink}
+                  title="Copiar link"
+                  className="flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors"
+                >
+                  {copiado ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                </button>
+              </div>
             </div>
           )}
         </div>
