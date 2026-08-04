@@ -182,3 +182,14 @@ export async function eliminarCombatesCategoria(categoriaId) {
   const { error } = await supabase.from('combate').delete().eq('categoria_id', categoriaId)
   if (error) throw error
 }
+
+export async function fetchCombatesByCategoriasIds(catIds) {
+  if (!catIds || catIds.length === 0) return []
+  const { data, error } = await supabase
+    .from('combate')
+    .select('*')
+    .in('categoria_id', catIds)
+    .eq('estado', 'en_curso')
+  if (error) throw error
+  return data ?? []
+}

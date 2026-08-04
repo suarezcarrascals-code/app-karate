@@ -22,6 +22,8 @@ import MesaKumitePage from './pages/mesa/MesaKumitePage'
 import MesaKataPage from './pages/mesa/MesaKataPage'
 import MesaKataTVPage from './pages/mesa/MesaKataTVPage'
 import MesaTVPage from './pages/mesa/MesaTVPage'
+import TorneoPublicoPage from './pages/publico/TorneoPublicoPage'
+import CategoriaPublicoPage from './pages/publico/CategoriaPublicoPage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import PendingPage from './pages/auth/PendingPage'
@@ -80,6 +82,8 @@ export default function App() {
         <Route path="/torneo/:id/marcador/:combateId/tv" element={<TvDisplay />} />
         <Route path="/inscripcion/:token" element={<InscripcionPublica />} />
         <Route path="/marcador/:token" element={<MarcadorPublico />} />
+        <Route path="/torneo/:id/publico" element={<TorneoPublicoPage />} />
+        <Route path="/torneo/:id/publico/categoria/:catId" element={<CategoriaPublicoPage />} />
 
         {/* Mesa técnica — acceso por link, sin cuenta */}
         <Route path="/mesa/:token" element={<MesaTatamiPage />} />
