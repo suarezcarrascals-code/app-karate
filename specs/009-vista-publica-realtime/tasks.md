@@ -76,7 +76,7 @@
 ## Phase 6: Polish & Integración
 
 - [X] T013 Agregar imports y export de `TorneoPublicoPage` y `CategoriaPublicoPage` en `src/App.jsx` (completar los imports agregados en T001)
-- [ ] T014 Commit y push del feature completo al branch `009-vista-publica-realtime`
+- [X] T014 Commit y push del feature completo al branch `009-vista-publica-realtime`
 
 ---
 
