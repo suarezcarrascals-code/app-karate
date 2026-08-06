@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { encontrarCategoriasCompatibles, edadAFechaNacimiento } from '../../lib/competidores'
+import { CINTURONES, NIVEL_LABEL, NIVEL_COLOR, clasificarCinturon } from '../../lib/cinturones'
 
 const GRUPOS_MODALIDAD = [
   { key: 'kumite_individual', label: 'Kumite Individual' },
@@ -17,6 +18,7 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
   const [edad, setEdad] = useState('')
   const [peso, setPeso] = useState('')
   const [genero, setGenero] = useState('')
+  const [cinturon, setCinturon] = useState('')
   const [categoriasIds, setCategoriasIds] = useState(new Set())
   const [errores, setErrores] = useState({})
   const [sugeridas, setSugeridas] = useState([])
@@ -68,11 +70,12 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
       fecha_nacimiento: edadAFechaNacimiento(parseInt(edad)),
       peso: peso ? parseFloat(peso) : null,
       genero,
+      cinturon: cinturon || null,
       categoria_ids: [...categoriasIds],
     })
 
     setNombre(''); setApellido(''); setEdad('')
-    setPeso(''); setGenero('')
+    setPeso(''); setGenero(''); setCinturon('')
     setCategoriasIds(new Set()); setErrores({}); setSugeridas([])
   }
 
@@ -171,6 +174,29 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Cinturón */}
+      <div>
+        <label className={LABEL}>Cinturón</label>
+        <select
+          value={cinturon}
+          onChange={(e) => setCinturon(e.target.value)}
+          className={INPUT}
+        >
+          <option value="">Sin especificar</option>
+          {CINTURONES.map((c) => (
+            <option key={c.key} value={c.key}>{c.label}</option>
+          ))}
+        </select>
+        {cinturon && (() => {
+          const nivel = clasificarCinturon(cinturon)
+          return nivel ? (
+            <span className={`inline-block mt-2 text-xs font-semibold px-2.5 py-1 rounded-full border ${NIVEL_COLOR[nivel]}`}>
+              {NIVEL_LABEL[nivel]}
+            </span>
+          ) : null
+        })()}
       </div>
 
       {/* Categorías — checklist */}

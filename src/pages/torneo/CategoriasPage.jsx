@@ -9,6 +9,7 @@ import CategoriaEmptyState from '../../components/categorias/CategoriaEmptyState
 import CategoriaForm from '../../components/categorias/CategoriaForm'
 import CategoriaCard from '../../components/categorias/CategoriaCard'
 import CategoriasWKFSelector from '../../components/categorias/CategoriasWKFSelector'
+import CategoriasLocalesSelector from '../../components/categorias/CategoriasLocalesSelector'
 import AsignarTatamiLoteModal from '../../components/categorias/AsignarTatamiLoteModal'
 
 const GRUPOS = [
@@ -49,6 +50,7 @@ export default function CategoriasPage() {
   const [loadingTorneo, setLoadingTorneo] = useState(true)
   const [mostrarForm, setMostrarForm] = useState(false)
   const [mostrarWKF, setMostrarWKF] = useState(false)
+  const [mostrarLocal, setMostrarLocal] = useState(false)
 
   const { categorias, loading, error, fetchCategorias, addCategoria, addCategoriasBulk, asignarTatamiLote } = useCategoriaStore()
   const { tatamis, fetchTatamis } = useTatamiStore()
@@ -110,6 +112,13 @@ export default function CategoriasPage() {
     } catch { /* error en store */ }
   }
 
+  async function handleImportarLocal(cats) {
+    try {
+      await addCategoriasBulk(id, cats)
+      setMostrarLocal(false)
+    } catch { /* error en store */ }
+  }
+
   if (loadingTorneo) {
     return (
       <div className="flex justify-center py-24">
@@ -166,6 +175,13 @@ export default function CategoriasPage() {
             {!modoSeleccion && (
               <>
                 <button
+                  onClick={() => setMostrarLocal(true)}
+                  className="flex items-center gap-1.5 bg-zinc-800 text-zinc-300 px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors border border-zinc-700"
+                >
+                  <ListChecks size={14} />
+                  Importar Local
+                </button>
+                <button
                   onClick={() => setMostrarWKF(true)}
                   className="flex items-center gap-1.5 bg-zinc-800 text-zinc-300 px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors border border-zinc-700"
                 >
@@ -182,6 +198,15 @@ export default function CategoriasPage() {
           </div>
         )}
       </div>
+
+      {mostrarLocal && (
+        <CategoriasLocalesSelector
+          categoriasExistentes={categorias}
+          onImportar={handleImportarLocal}
+          onCancel={() => setMostrarLocal(false)}
+          loading={loading}
+        />
+      )}
 
       {mostrarWKF && (
         <CategoriasWKFSelector

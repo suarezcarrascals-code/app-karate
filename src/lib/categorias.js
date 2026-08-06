@@ -78,9 +78,9 @@ export async function insertCategoriasBulk(torneoId, categorias) {
     edad_max: c.edad_max ?? null,
     peso_min: c.peso_min ?? null,
     peso_max: c.peso_max ?? null,
-    cinturon_min: null,
-    cinturon_max: null,
-    nivel: null,
+    cinturon_min: c.cinturon_min ?? null,
+    cinturon_max: c.cinturon_max ?? null,
+    nivel: c.nivel ?? null,
     estado: 'abierta',
   }))
   const { data, error } = await supabase

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { calcularEdad, encontrarCategoriasCompatibles } from '../../lib/competidores'
+import { CINTURONES, NIVEL_LABEL, NIVEL_COLOR, clasificarCinturon } from '../../lib/cinturones'
 
 const MODALIDAD_LABEL = {
   kumite_individual: 'Kumite Ind.',
@@ -125,8 +126,22 @@ export default function CompetidorForm({ onSubmit, onCancel, loading, categorias
       <div className="grid grid-cols-2 gap-3">
         <input type="number" name="peso" value={campos.peso} onChange={handleChange}
           placeholder="Peso (kg)" step="0.1" min="0" className={INPUT} />
-        <input type="text" name="cinturon" value={campos.cinturon} onChange={handleChange}
-          placeholder="Cinturón" className={INPUT} />
+        <div>
+          <select name="cinturon" value={campos.cinturon} onChange={handleChange} className={INPUT}>
+            <option value="">Cinturón (opcional)</option>
+            {CINTURONES.map((c) => (
+              <option key={c.key} value={c.key}>{c.label}</option>
+            ))}
+          </select>
+          {campos.cinturon && (() => {
+            const nivel = clasificarCinturon(campos.cinturon)
+            return nivel ? (
+              <span className={`inline-block mt-1.5 text-xs font-semibold px-2 py-0.5 rounded-full border ${NIVEL_COLOR[nivel]}`}>
+                {NIVEL_LABEL[nivel]}
+              </span>
+            ) : null
+          })()}
+        </div>
       </div>
 
       <div>
