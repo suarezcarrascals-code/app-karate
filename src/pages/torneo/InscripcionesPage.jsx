@@ -58,8 +58,8 @@ export default function InscripcionesPage() {
     return acc
   }, {})
 
-  async function handleGenerar(dojoId, limite) {
-    await generarLink(torneoId, dojoId, limite)
+  async function handleGenerar(dojoId) {
+    await generarLink(torneoId, dojoId)
   }
 
   async function handleGenerarMT(tid, tatamiId) {

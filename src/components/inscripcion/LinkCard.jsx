@@ -21,7 +21,6 @@ function EstadoBadge({ estado }) {
 }
 
 export default function LinkCard({ link, dojo, torneoId, onGenerar }) {
-  const [limite, setLimite] = useState('')
   const [copiado, setCopiado] = useState(false)
   const [confirmarDesactivar, setConfirmarDesactivar] = useState(false)
   const [loadingGen, setLoadingGen] = useState(false)
@@ -30,18 +29,13 @@ export default function LinkCard({ link, dojo, torneoId, onGenerar }) {
 
   const urlLink = link ? `${window.location.origin}/inscripcion/${link.token}` : null
   const count = link?._count ?? 0
-  const limite_atletas = link?.limite_atletas ?? 0
   const estado = link?.estado ?? null
   const tieneLink = !!link
 
-  async function handleGenerar(e) {
-    e.preventDefault()
-    const n = parseInt(limite)
-    if (!n || n < 1) return
+  async function handleGenerar() {
     setLoadingGen(true)
     try {
-      await onGenerar(dojo.id, n)
-      setLimite('')
+      await onGenerar(dojo.id)
     } finally {
       setLoadingGen(false)
     }
@@ -67,7 +61,7 @@ export default function LinkCard({ link, dojo, torneoId, onGenerar }) {
           <p className="font-semibold text-zinc-100 text-sm">{dojo.nombre}</p>
           {tieneLink && estado === 'activo' && (
             <p className="text-xs text-zinc-500 mt-0.5 tabular-nums">
-              {count} / {limite_atletas} atletas inscritos
+              {count} atleta{count !== 1 ? 's' : ''} inscrito{count !== 1 ? 's' : ''}
             </p>
           )}
         </div>
@@ -96,24 +90,13 @@ export default function LinkCard({ link, dojo, torneoId, onGenerar }) {
 
       {/* Link inactivo — generar nuevo */}
       {(!tieneLink || estado === 'inactivo') && (
-        <form onSubmit={handleGenerar} className="flex gap-2">
-          <input
-            type="number"
-            min="1"
-            max="999"
-            value={limite}
-            onChange={(e) => setLimite(e.target.value)}
-            placeholder="Límite de atletas"
-            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40"
-          />
-          <button
-            type="submit"
-            disabled={!limite || loadingGen}
-            className="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
-          >
-            {loadingGen ? '...' : 'Generar'}
-          </button>
-        </form>
+        <button
+          onClick={handleGenerar}
+          disabled={loadingGen}
+          className="w-full bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
+        >
+          {loadingGen ? '...' : 'Generar link'}
+        </button>
       )}
 
       {/* URL preview */}

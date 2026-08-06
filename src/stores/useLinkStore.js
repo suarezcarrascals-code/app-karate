@@ -18,10 +18,10 @@ const useLinkStore = create((set, get) => ({
     }
   },
 
-  generarLink: async (torneoId, dojoId, limiteAtletas) => {
+  generarLink: async (torneoId, dojoId) => {
     set({ loading: true, error: null })
     try {
-      const link = await generarLink(torneoId, dojoId, limiteAtletas)
+      const link = await generarLink(torneoId, dojoId)
       set((s) => ({
         // Reemplazar link anterior del mismo dojo si existe
         links: [

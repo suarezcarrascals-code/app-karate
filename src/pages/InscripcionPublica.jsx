@@ -49,10 +49,8 @@ export default function InscripcionPublica() {
     setLoadingAdd(true)
     setError(null)
     try {
-      const cuposRestantes = link.limite_atletas - atletas.length
-      const aInscribir = nuevosAtletas.slice(0, cuposRestantes)
       const nuevos = await Promise.all(
-        aInscribir.map((a) => {
+        nuevosAtletas.map((a) => {
           const categoria = categorias.find((c) => c.id === a.categoria_id)
           return insertCompetidorPorLink(
             { ...a, torneo_id: link.torneo_id, dojo_id: link.dojo_id, modalidad: categoria?.modalidad ?? null },
@@ -62,9 +60,6 @@ export default function InscripcionPublica() {
       )
       setAtletas((prev) => [...prev, ...nuevos])
       setMostrarCSV(false)
-      if (aInscribir.length < nuevosAtletas.length) {
-        setError(`Solo se inscribieron ${aInscribir.length} de ${nuevosAtletas.length} atletas — se alcanzó el límite del club.`)
-      }
     } catch (err) {
       setError(err.message || 'Error al importar. Intentá de nuevo.')
     } finally {
@@ -90,11 +85,7 @@ export default function InscripcionPublica() {
       )
       setAtletas((prev) => [...prev, nuevo])
     } catch (err) {
-      if (err.message?.includes('limit') || err.code === '42501') {
-        setError('Se alcanzó el límite de atletas para tu club.')
-      } else {
-        setError(err.message || 'Error al guardar el atleta. Intentá de nuevo.')
-      }
+      setError(err.message || 'Error al guardar el atleta. Intentá de nuevo.')
     } finally {
       setLoadingAdd(false)
     }
@@ -125,9 +116,6 @@ export default function InscripcionPublica() {
     )
   }
 
-  const cupoLleno = atletas.length >= link.limite_atletas
-  const porcentajeCupo = Math.min(100, (atletas.length / link.limite_atletas) * 100)
-
   return (
     <div className="min-h-[100dvh] bg-zinc-950 text-zinc-100 relative overflow-x-hidden">
       <div
@@ -155,56 +143,26 @@ export default function InscripcionPublica() {
                 {link.dojo?.nombre}
               </h1>
 
-              {/* Cupo del club */}
-              <div className="mt-4 bg-zinc-900 border border-zinc-800 rounded-xl p-3.5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-zinc-500">Cupo del club</span>
-                  <span className={`text-sm font-bold tabular-nums ${cupoLleno ? 'text-rose-400' : 'text-zinc-200'}`}>
-                    {atletas.length} / {link.limite_atletas}
-                    <span className="text-zinc-600 font-normal text-xs ml-1.5">atletas</span>
-                  </span>
-                </div>
-                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${cupoLleno ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                    style={{ width: `${porcentajeCupo}%` }}
-                  />
-                </div>
-                {cupoLleno && (
-                  <p className="text-xs text-rose-400 font-medium mt-2">Cupo completo</p>
-                )}
-              </div>
             </div>
 
-            {/* Formulario o mensaje de cupo */}
-            {cupoLleno ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center mb-6">
-                <p className="text-zinc-400 font-medium mb-1">Cupo completo para tu club</p>
-                <p className="text-zinc-600 text-sm">
-                  Se inscribieron los {link.limite_atletas} atletas acordados.
-                </p>
+            {/* Formulario */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-semibold text-zinc-300">Agregar atleta</p>
+                <button
+                  onClick={() => setMostrarCSV(true)}
+                  className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <UploadSimple size={13} />
+                  Importar CSV
+                </button>
               </div>
-            ) : (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm font-semibold text-zinc-300">
-                    Agregar atleta ({link.limite_atletas - atletas.length} cupo{link.limite_atletas - atletas.length !== 1 ? 's' : ''} restante{link.limite_atletas - atletas.length !== 1 ? 's' : ''})
-                  </p>
-                  <button
-                    onClick={() => setMostrarCSV(true)}
-                    className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    <UploadSimple size={13} />
-                    Importar CSV
-                  </button>
-                </div>
-                <AtletaForm
-                  categorias={categorias}
-                  onAgregar={handleAgregar}
-                  loading={loadingAdd}
-                />
-              </div>
-            )}
+              <AtletaForm
+                categorias={categorias}
+                onAgregar={handleAgregar}
+                loading={loadingAdd}
+              />
+            </div>
 
             {/* Error */}
             {error && (

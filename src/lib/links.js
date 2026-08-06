@@ -39,11 +39,11 @@ export async function fetchLinkByToken(token) {
   return data
 }
 
-export async function generarLink(torneoId, dojoId, limiteAtletas) {
+export async function generarLink(torneoId, dojoId) {
   const { data, error } = await supabase
     .from('link_inscripcion')
     .upsert(
-      { torneo_id: torneoId, dojo_id: dojoId, limite_atletas: limiteAtletas, estado: 'activo' },
+      { torneo_id: torneoId, dojo_id: dojoId, limite_atletas: null, estado: 'activo' },
       { onConflict: 'torneo_id,dojo_id' }
     )
     .select('*, dojo:dojo_id(id, nombre)')
