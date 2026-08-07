@@ -18,7 +18,7 @@ export function edadAFechaNacimiento(edad) {
 export function encontrarCategoriasCompatibles(competidor, categorias) {
   const edad = competidor.edad != null ? parseInt(competidor.edad) : calcularEdad(competidor.fecha_nacimiento)
   return categorias.filter((cat) => {
-    if (cat.modalidad !== competidor.modalidad) return false
+    if (competidor.modalidad != null && cat.modalidad !== competidor.modalidad) return false
     if (cat.genero !== 'mixto' && cat.genero !== competidor.genero) return false
     if (cat.edad_min != null && (edad === null || edad < cat.edad_min)) return false
     if (cat.edad_max != null && (edad === null || edad > cat.edad_max)) return false
