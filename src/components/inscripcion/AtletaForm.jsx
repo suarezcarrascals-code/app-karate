@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
-import { encontrarCategoriasCompatibles, edadAFechaNacimiento } from '../../lib/competidores'
+import { useState } from 'react'
+import { edadAFechaNacimiento } from '../../lib/competidores'
 import { CINTURONES, NIVEL_LABEL, NIVEL_COLOR, clasificarCinturon } from '../../lib/cinturones'
 
-const GRUPOS_MODALIDAD = [
-  { key: 'kumite_individual', label: 'Kumite Individual' },
-  { key: 'kumite_equipo',     label: 'Kumite Equipo' },
-  { key: 'kata_individual',   label: 'Kata Individual' },
-  { key: 'kata_equipo',       label: 'Kata Equipo' },
-]
+const MODALIDAD_LABEL = {
+  kumite_individual: 'Kumite Individual',
+  kumite_equipo:     'Kumite Equipo',
+  kata_individual:   'Kata Individual',
+  kata_equipo:       'Kata Equipo',
+}
 
 const INPUT = 'w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-600 transition-colors'
 const LABEL = 'block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2'
@@ -21,24 +21,7 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
   const [cinturon, setCinturon] = useState('')
   const [categoriasIds, setCategoriasIds] = useState(new Set())
   const [errores, setErrores] = useState({})
-  const [sugeridas, setSugeridas] = useState([])
-
-  useEffect(() => {
-    if (!edad || !genero || !categorias?.length) {
-      setSugeridas([])
-      return
-    }
-    const compatibles = encontrarCategoriasCompatibles(
-      { edad: parseInt(edad), peso: peso ? parseFloat(peso) : null, genero },
-      categorias
-    )
-    const ids = compatibles.map((c) => c.id)
-    setSugeridas(ids)
-    // Pre-seleccionar sugeridas si el atleta no tiene ninguna seleccionada aún
-    if (ids.length > 0 && categoriasIds.size === 0) {
-      setCategoriasIds(new Set(ids))
-    }
-  }, [edad, peso, genero, categorias]) // eslint-disable-line
+  const [busqueda, setBusqueda] = useState('')
 
   function toggleCategoria(id) {
     setCategoriasIds((prev) => {
@@ -76,18 +59,15 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
 
     setNombre(''); setApellido(''); setEdad('')
     setPeso(''); setGenero(''); setCinturon('')
-    setCategoriasIds(new Set()); setErrores({}); setSugeridas([])
+    setCategoriasIds(new Set()); setErrores({}); setBusqueda('')
   }
 
-  const [verTodas, setVerTodas] = useState(false)
-
-  const conocidas = new Set(GRUPOS_MODALIDAD.map((g) => g.key))
-  const otras = categorias?.filter((c) => !conocidas.has(c.modalidad)) ?? []
-
-  const tieneEdadYGenero = edad && genero
-  const categoriasVisibles = (tieneEdadYGenero && sugeridas.length > 0 && !verTodas)
-    ? categorias?.filter((c) => sugeridas.includes(c.id)) ?? []
-    : categorias ?? []
+  const termino = busqueda.trim().toLowerCase()
+  const categoriasFiltradas = (categorias ?? []).filter((c) => {
+    if (!termino) return true
+    const modalidadLabel = (MODALIDAD_LABEL[c.modalidad] ?? c.modalidad ?? '').toLowerCase()
+    return c.nombre.toLowerCase().includes(termino) || modalidadLabel.includes(termino)
+  })
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -206,7 +186,7 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
         })()}
       </div>
 
-      {/* Categorías — checklist */}
+      {/* Categorías — buscador */}
       <div>
         <label className={LABEL}>
           Categorías
@@ -217,55 +197,40 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
           )}
         </label>
 
-        {!tieneEdadYGenero && (
-          <p className="text-xs text-zinc-500 mb-2">Completá edad y sexo para ver las categorías disponibles</p>
-        )}
+        <input
+          type="text"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre o modalidad (ej: kumite, mayor, -84kg)..."
+          className={`${INPUT} mb-2`}
+        />
 
-        {tieneEdadYGenero && sugeridas.length === 0 && (
-          <p className="text-xs text-amber-400/80 mb-2">No se encontraron categorías compatibles — seleccioná manualmente</p>
-        )}
-
-        {tieneEdadYGenero && sugeridas.length > 0 && !verTodas && (
-          <p className="text-xs text-emerald-400/80 mb-2">Categorías según los datos del atleta</p>
-        )}
-
-        {tieneEdadYGenero && (
-          <div className="max-h-60 overflow-y-auto rounded-xl border border-zinc-700/60 p-3 space-y-1.5">
-            {categoriasVisibles.map((cat) => {
-              const checked = categoriasIds.has(cat.id)
-              return (
-                <label
-                  key={cat.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    checked
-                      ? 'bg-rose-950/30 border-rose-700/50 text-zinc-100'
-                      : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleCategoria(cat.id)}
-                    className="w-4 h-4 accent-rose-600 shrink-0"
-                  />
-                  <span className="text-sm flex-1">{cat.nombre}</span>
-                </label>
-              )
-            })}
-          </div>
-        )}
-
-        {tieneEdadYGenero && sugeridas.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setVerTodas((v) => !v)}
-            className="mt-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-          >
-            {verTodas
-              ? '← Mostrar solo las sugeridas'
-              : `Ver todas las categorías (${categorias?.length ?? 0})`}
-          </button>
-        )}
+        <div className="max-h-56 overflow-y-auto rounded-xl border border-zinc-700/60 p-2 space-y-1">
+          {categoriasFiltradas.length === 0 && (
+            <p className="text-xs text-zinc-500 text-center py-4">Sin resultados para "{busqueda}"</p>
+          )}
+          {categoriasFiltradas.map((cat) => {
+            const checked = categoriasIds.has(cat.id)
+            return (
+              <label
+                key={cat.id}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-all ${
+                  checked
+                    ? 'bg-rose-950/30 border-rose-700/50 text-zinc-100'
+                    : 'bg-zinc-800/50 border-transparent text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleCategoria(cat.id)}
+                  className="w-4 h-4 accent-rose-600 shrink-0"
+                />
+                <span className="text-sm flex-1 leading-snug">{cat.nombre}</span>
+              </label>
+            )
+          })}
+        </div>
 
         {errores.categorias && <p className="text-rose-400 text-xs mt-2">{errores.categorias}</p>}
       </div>
