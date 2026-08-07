@@ -2,7 +2,6 @@
 // Principiante: 10° y 9° Kyu | Intermedio: 8° al 5° Kyu | Avanzado: 4° Kyu a Dan
 
 export const CINTURONES = [
-  { key: '10kyu', label: 'Sin grado (10° Kyu)', kyu: 10, nivel: 'principiante' },
   { key: '9kyu',  label: 'Blanco (9° Kyu)',     kyu: 9,  nivel: 'principiante' },
   { key: '8kyu',  label: 'Amarillo (8° Kyu)',   kyu: 8,  nivel: 'intermedio'   },
   { key: '7kyu',  label: 'Naranja (7° Kyu)',    kyu: 7,  nivel: 'intermedio'   },
