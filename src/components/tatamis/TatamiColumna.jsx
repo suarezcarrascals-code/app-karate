@@ -72,11 +72,18 @@ export default function TatamiColumna({ tatami, posicion, categorias, torneoEsta
     setGenerandoLink(true)
     try {
       const linkData = await generarLinkMesa(torneoId, tatami.id)
+      if (!linkData?.token) throw new Error('El link no tiene token. Revisá que la tabla link_mesa tenga un token generado por defecto.')
       const url = `${window.location.origin}/mesa/${linkData.token}`
-      await navigator.clipboard.writeText(url)
+      try {
+        await navigator.clipboard.writeText(url)
+      } catch {
+        prompt('Copiá este link manualmente:', url)
+      }
       setLinkCopiado(true)
       setTimeout(() => setLinkCopiado(false), 2500)
-    } catch { /* silencioso */ } finally {
+    } catch (err) {
+      alert(`Error al generar link de mesa: ${err.message}`)
+    } finally {
       setGenerandoLink(false)
     }
   }
