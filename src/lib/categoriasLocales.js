@@ -92,6 +92,29 @@ for (const edad of GRUPOS_EDAD) {
 
 export const CATEGORIAS_LOCALES = _cats
 
+// Preset sin peso: kumite y kata sin división de peso para todas las edades y niveles
+const _sinPeso = []
+for (const edad of GRUPOS_EDAD) {
+  for (const nivel of ['principiante', 'intermedio', 'avanzado']) {
+    const ncfg = NIVEL_CFG[nivel]
+    for (const [genero, genLabel] of [['masculino', 'Masculino'], ['femenino', 'Femenino']]) {
+      const base = {
+        genero,
+        edad_min: edad.edad_min,
+        edad_max: edad.edad_max,
+        nivel,
+        cinturon_min: ncfg.cinturon_min,
+        cinturon_max: ncfg.cinturon_max,
+        peso_min: null,
+        peso_max: null,
+      }
+      _sinPeso.push({ ...base, nombre: `Kata Individual ${edad.label} ${genLabel} ${ncfg.label}`, modalidad: 'kata_individual' })
+      _sinPeso.push({ ...base, nombre: `Kumite Individual ${edad.label} ${genLabel} ${ncfg.label}`, modalidad: 'kumite_individual' })
+    }
+  }
+}
+export const PRESET_SIN_PESO = _sinPeso
+
 export const GRUPOS_LOCALES = [
   { nivel: 'principiante', label: 'Principiante', sub: '10° y 9° Kyu' },
   { nivel: 'intermedio',   label: 'Intermedio',   sub: '8° al 5° Kyu' },
