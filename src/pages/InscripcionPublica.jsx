@@ -185,6 +185,11 @@ export default function InscripcionPublica() {
               </div>
             )}
 
+            {/* Guía de categorías — solo mobile, debajo de las inscripciones */}
+            <div className="lg:hidden mt-6">
+              <GlosarioTerminos />
+            </div>
+
           </div>
 
           {/* RIGHT — sidebar sticky (solo desktop) */}
