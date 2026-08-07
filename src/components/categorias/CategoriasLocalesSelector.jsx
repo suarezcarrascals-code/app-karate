@@ -13,7 +13,10 @@ const MODALIDAD_LABEL = {
   kumite_individual: 'Kumite Individual',
 }
 
-// Pool unificado (sin peso + con peso), deduplicado por nombre
+// Solo categorías CON división de peso (kumite Sub-12 en adelante)
+const CATS_CON_PESO = CATEGORIAS_LOCALES.filter((c) => c.peso_max !== null)
+
+// Pool unificado para importar (sin peso + con peso), deduplicado por nombre
 const POOL = [...new Map(
   [...CATEGORIAS_LOCALES, ...PRESET_SIN_PESO].map((c) => [c.nombre, c])
 ).values()]
@@ -57,7 +60,7 @@ export default function CategoriasLocalesSelector({ categoriasExistentes = [], o
   }
 
   function toggleNivel(nivel) {
-    const grupo = CATEGORIAS_LOCALES.filter((c) => c.nivel === nivel && !nombresExistentes.has(c.nombre))
+    const grupo = CATS_CON_PESO.filter((c) => c.nivel === nivel && !nombresExistentes.has(c.nombre))
     const todosSeleccionados = grupo.every((c) => seleccionadas.has(c.nombre))
     setSeleccionadas((prev) => {
       const next = new Set(prev)
@@ -67,7 +70,7 @@ export default function CategoriasLocalesSelector({ categoriasExistentes = [], o
   }
 
   function toggleNivelModalidad(nivel, modalidad) {
-    const grupo = CATEGORIAS_LOCALES.filter(
+    const grupo = CATS_CON_PESO.filter(
       (c) => c.nivel === nivel && c.modalidad === modalidad && !nombresExistentes.has(c.nombre)
     )
     const todosSeleccionados = grupo.every((c) => seleccionadas.has(c.nombre))
@@ -79,7 +82,7 @@ export default function CategoriasLocalesSelector({ categoriasExistentes = [], o
   }
 
   function seleccionarTodas() {
-    const disponibles = CATEGORIAS_LOCALES.filter((c) => !nombresExistentes.has(c.nombre)).map((c) => c.nombre)
+    const disponibles = CATS_CON_PESO.filter((c) => !nombresExistentes.has(c.nombre)).map((c) => c.nombre)
     setSeleccionadas(new Set(disponibles))
   }
 
@@ -92,7 +95,7 @@ export default function CategoriasLocalesSelector({ categoriasExistentes = [], o
     onImportar(cats)
   }
 
-  const disponiblesTotal = CATEGORIAS_LOCALES.filter((c) => !nombresExistentes.has(c.nombre)).length
+  const disponiblesTotal = CATS_CON_PESO.filter((c) => !nombresExistentes.has(c.nombre)).length
   const disponiblesSinPeso = PRESET_SIN_PESO.filter((c) => !nombresExistentes.has(c.nombre)).length
 
   return (
@@ -246,14 +249,14 @@ export default function CategoriasLocalesSelector({ categoriasExistentes = [], o
             <div className="px-5 py-4 space-y-8 max-h-[60vh] overflow-y-auto">
               {GRUPOS_LOCALES.map((grupo) => {
                 const style = NIVEL_STYLE[grupo.nivel]
-                const disponiblesNivel = CATEGORIAS_LOCALES.filter(
+                const disponiblesNivel = CATS_CON_PESO.filter(
                   (c) => c.nivel === grupo.nivel && !nombresExistentes.has(c.nombre)
                 )
                 const selNivel = disponiblesNivel.filter((c) => seleccionadas.has(c.nombre))
                 const todosNivel = disponiblesNivel.length > 0 && selNivel.length === disponiblesNivel.length
 
                 const modalidades = [...new Set(
-                  CATEGORIAS_LOCALES.filter((c) => c.nivel === grupo.nivel).map((c) => c.modalidad)
+                  CATS_CON_PESO.filter((c) => c.nivel === grupo.nivel).map((c) => c.modalidad)
                 )]
 
                 return (
@@ -280,7 +283,7 @@ export default function CategoriasLocalesSelector({ categoriasExistentes = [], o
 
                     <div className="space-y-4">
                       {modalidades.map((modalidad) => {
-                        const cats = CATEGORIAS_LOCALES.filter(
+                        const cats = CATS_CON_PESO.filter(
                           (c) => c.nivel === grupo.nivel && c.modalidad === modalidad
                         )
                         const disponiblesM = cats.filter((c) => !nombresExistentes.has(c.nombre))
