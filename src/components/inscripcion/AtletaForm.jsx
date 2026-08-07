@@ -204,6 +204,10 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
           placeholder="Buscar por nombre o modalidad (ej: kumite, mayor, -84kg)..."
           className={`${INPUT} mb-2`}
         />
+        <p className="text-xs text-zinc-600 mb-2">
+          {(categorias ?? []).length} categorías disponibles
+          {busqueda && ` · ${categoriasFiltradas.length} resultados`}
+        </p>
 
         <div className="max-h-56 overflow-y-auto rounded-xl border border-zinc-700/60 p-2 space-y-1">
           {categoriasFiltradas.length === 0 && (
