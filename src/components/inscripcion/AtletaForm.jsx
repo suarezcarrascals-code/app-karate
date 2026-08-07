@@ -79,8 +79,15 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
     setCategoriasIds(new Set()); setErrores({}); setSugeridas([])
   }
 
+  const [verTodas, setVerTodas] = useState(false)
+
   const conocidas = new Set(GRUPOS_MODALIDAD.map((g) => g.key))
   const otras = categorias?.filter((c) => !conocidas.has(c.modalidad)) ?? []
+
+  const tieneEdadYGenero = edad && genero
+  const categoriasVisibles = (tieneEdadYGenero && sugeridas.length > 0 && !verTodas)
+    ? categorias?.filter((c) => sugeridas.includes(c.id)) ?? []
+    : categorias ?? []
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -210,79 +217,55 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
           )}
         </label>
 
-        {sugeridas.length > 0 && (
-          <p className="text-xs text-emerald-400/80 mb-2">
-            ★ Categorías sugeridas según los datos del atleta
-          </p>
+        {!tieneEdadYGenero && (
+          <p className="text-xs text-zinc-500 mb-2">Completá edad y sexo para ver las categorías disponibles</p>
         )}
 
-        <div className="max-h-60 overflow-y-auto rounded-xl border border-zinc-700/60 p-3 space-y-3">
-          {GRUPOS_MODALIDAD.map(({ key, label }) => {
-            const items = categorias?.filter((c) => c.modalidad === key) ?? []
-            if (items.length === 0) return null
-            return (
-              <div key={key}>
-                <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">{label}</p>
-                <div className="space-y-1.5">
-                  {items.map((cat) => {
-                    const checked = categoriasIds.has(cat.id)
-                    const sugerida = sugeridas.includes(cat.id)
-                    return (
-                      <label
-                        key={cat.id}
-                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                          checked
-                            ? 'bg-rose-950/30 border-rose-700/50 text-zinc-100'
-                            : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleCategoria(cat.id)}
-                          className="w-4 h-4 accent-rose-600 shrink-0"
-                        />
-                        <span className="text-sm flex-1">
-                          {sugerida && <span className="text-emerald-400 mr-1">★</span>}
-                          {cat.nombre}
-                        </span>
-                      </label>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
+        {tieneEdadYGenero && sugeridas.length === 0 && (
+          <p className="text-xs text-amber-400/80 mb-2">No se encontraron categorías compatibles — seleccioná manualmente</p>
+        )}
 
-          {otras.length > 0 && (
-            <div>
-              <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">Otras</p>
-              <div className="space-y-1.5">
-                {otras.map((cat) => {
-                  const checked = categoriasIds.has(cat.id)
-                  return (
-                    <label
-                      key={cat.id}
-                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                        checked
-                          ? 'bg-rose-950/30 border-rose-700/50 text-zinc-100'
-                          : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleCategoria(cat.id)}
-                        className="w-4 h-4 accent-rose-600 shrink-0"
-                      />
-                      <span className="text-sm">{cat.nombre}</span>
-                    </label>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+        {tieneEdadYGenero && sugeridas.length > 0 && !verTodas && (
+          <p className="text-xs text-emerald-400/80 mb-2">Categorías según los datos del atleta</p>
+        )}
+
+        {tieneEdadYGenero && (
+          <div className="max-h-60 overflow-y-auto rounded-xl border border-zinc-700/60 p-3 space-y-1.5">
+            {categoriasVisibles.map((cat) => {
+              const checked = categoriasIds.has(cat.id)
+              return (
+                <label
+                  key={cat.id}
+                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                    checked
+                      ? 'bg-rose-950/30 border-rose-700/50 text-zinc-100'
+                      : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleCategoria(cat.id)}
+                    className="w-4 h-4 accent-rose-600 shrink-0"
+                  />
+                  <span className="text-sm flex-1">{cat.nombre}</span>
+                </label>
+              )
+            })}
+          </div>
+        )}
+
+        {tieneEdadYGenero && sugeridas.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setVerTodas((v) => !v)}
+            className="mt-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            {verTodas
+              ? '← Mostrar solo las sugeridas'
+              : `Ver todas las categorías (${categorias?.length ?? 0})`}
+          </button>
+        )}
 
         {errores.categorias && <p className="text-rose-400 text-xs mt-2">{errores.categorias}</p>}
       </div>
