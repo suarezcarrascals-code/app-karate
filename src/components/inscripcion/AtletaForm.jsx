@@ -62,11 +62,11 @@ export default function AtletaForm({ categorias, onAgregar, loading }) {
     setCategoriasIds(new Set()); setErrores({}); setBusqueda('')
   }
 
-  const termino = busqueda.trim().toLowerCase()
+  const palabras = busqueda.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const categoriasFiltradas = (categorias ?? []).filter((c) => {
-    if (!termino) return true
-    const modalidadLabel = (MODALIDAD_LABEL[c.modalidad] ?? c.modalidad ?? '').toLowerCase()
-    return c.nombre.toLowerCase().includes(termino) || modalidadLabel.includes(termino)
+    if (palabras.length === 0) return true
+    const texto = `${c.nombre} ${MODALIDAD_LABEL[c.modalidad] ?? c.modalidad ?? ''}`.toLowerCase()
+    return palabras.every((p) => texto.includes(p))
   })
 
   return (
