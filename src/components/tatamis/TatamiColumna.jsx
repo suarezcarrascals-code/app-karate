@@ -63,6 +63,8 @@ export default function TatamiColumna({ tatami, posicion, categorias, torneoEsta
   const [errorNombre, setErrorNombre] = useState(null)
   const [linkCopiado, setLinkCopiado] = useState(false)
   const [generandoLink, setGenerandoLink] = useState(false)
+  const [linkError, setLinkError] = useState(null)
+  const [linkUrl, setLinkUrl] = useState(null)
 
   const removeTatami = useTatamiStore((s) => s.removeTatami)
   const editTatami = useTatamiStore((s) => s.editTatami)
@@ -70,19 +72,23 @@ export default function TatamiColumna({ tatami, posicion, categorias, torneoEsta
 
   async function handleLinkMesa() {
     setGenerandoLink(true)
+    setLinkError(null)
+    setLinkUrl(null)
     try {
       const linkData = await generarLinkMesa(torneoId, tatami.id)
-      if (!linkData?.token) throw new Error('El link no tiene token. Revisá que la tabla link_mesa tenga un token generado por defecto.')
+      if (!linkData?.token) throw new Error('Sin token — revisá la tabla link_mesa en Supabase')
       const url = `${window.location.origin}/mesa/${linkData.token}`
+      setLinkUrl(url)
       try {
         await navigator.clipboard.writeText(url)
+        setLinkCopiado(true)
+        setTimeout(() => { setLinkCopiado(false); setLinkUrl(null) }, 4000)
       } catch {
-        prompt('Copiá este link manualmente:', url)
+        // clipboard bloqueado — mostramos el URL inline
       }
-      setLinkCopiado(true)
-      setTimeout(() => setLinkCopiado(false), 2500)
     } catch (err) {
-      alert(`Error al generar link de mesa: ${err.message}`)
+      console.error('handleLinkMesa error:', err)
+      setLinkError(err.message)
     } finally {
       setGenerandoLink(false)
     }
@@ -165,7 +171,7 @@ export default function TatamiColumna({ tatami, posicion, categorias, torneoEsta
                   }`}
                 >
                   <Link size={11} />
-                  {linkCopiado ? 'Copiado' : 'Link mesa'}
+                  {generandoLink ? '...' : linkCopiado ? 'Copiado' : 'Link mesa'}
                 </button>
               )}
               {!bloqueado && (
@@ -184,6 +190,24 @@ export default function TatamiColumna({ tatami, posicion, categorias, torneoEsta
           </div>
         )}
       </div>
+
+      {/* Link mesa — error o URL copiable */}
+      {linkError && (
+        <div className="px-3 py-2 bg-rose-950/40 border-b border-rose-900/40 text-rose-300 text-xs">
+          Error: {linkError}
+        </div>
+      )}
+      {linkUrl && !linkCopiado && (
+        <div className="px-3 py-2 bg-zinc-800/60 border-b border-zinc-700 text-xs">
+          <p className="text-zinc-500 mb-1">Copiá el link manualmente:</p>
+          <input
+            readOnly
+            value={linkUrl}
+            onFocus={(e) => e.target.select()}
+            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-zinc-300 text-xs"
+          />
+        </div>
+      )}
 
       {/* Drop zone */}
       <div ref={setNodeRef}
