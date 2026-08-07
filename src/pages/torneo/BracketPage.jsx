@@ -207,6 +207,16 @@ export default function BracketPage() {
               Agregar
             </button>
           )}
+          {combates.length === 0 && categoria?.estado === 'cerrada' && categoria?.tatami_id && !mostrarFormAgregar && (
+            <button
+              onClick={() => generarBracket(catId, categoria.tatami_id, competidores)}
+              disabled={loading}
+              className="flex items-center gap-1.5 text-xs text-white bg-rose-700 hover:bg-rose-600 border border-rose-600 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <ArrowsClockwise size={12} />
+              Generar bracket
+            </button>
+          )}
           {combates.length > 0 && !confirmRegen && !mostrarFormAgregar && (
             <button
               onClick={() => setConfirmRegen(true)}
